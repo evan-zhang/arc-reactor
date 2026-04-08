@@ -1,0 +1,7 @@
+- [ ] 创建 `arc-reactor-doc/` 统一档案仓
+- [ ] 搬迁数据产出：`reports/`, `knowledge/` -> `arc-reactor-doc/`
+- [ ] 搬迁规则库：`references/` -> `arc-reactor-doc/`
+- [ ] 归位技能核心：将 `SKILL.md`, `components/`, `meta.yaml` 移至 `skills/arc-reactor/`
+- [ ] 修正 `SKILL.md` 内容：重写所有相对路径引用
+- [ ] 验证：检查主根目录的纯净度与各组件的可访问性
+- [ ] 同步 GitHub 远端
