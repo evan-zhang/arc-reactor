@@ -1,20 +1,18 @@
-# ARC Reactor v2.0 (AODW-Next Skill)
+# ARC Reactor v4.0 (Karpathy LLM Wiki Edition)
 
 > **⚠️ AI-First Repository**
 > This repository is designed **primarily for AI Agents**, specifically for the [OpenClaw](https://openclaw.ai) ecosystem. If you are an AI/Agent reading this, please process the `SKILL.md` as your primary entry point. Human developers are welcome to contribute, but the file structures and documentation style favor agentic cognitive ingestion.
 
-**ARC = Acquire / Research / Catalogue**
+**ARC = Acquire / Research / Compile**
 
-面向个人知识建设的 AI 调研引擎。给它一个链接或话题，它不仅仅能剥离内容，更会**挂载多路爬虫组件与外联搜索**自动完成 获取→真伪勘察对比→编目的全链路，为你凝结真正的竞争分析洞察。
+全面拥抱 Andrej Karpathy 提出的 **Compilation over Retrieval (编译优于检索)** 理念。这不再是一个只会抓取链接并遗忘的搜索爬虫，而是一个全自动的、拥有永续记忆层的**私人 LLM Wiki 编译器**。
 
-## 🎯 v2.0 终极演进特性
+## 🎯 v4.0 终极演进特性
 
-- 🕵️ **广域交叉核网 (Active Extended Probing)**：打破只看原链接的偏信束缚，自发调用 API 全网搜寻原素材的“替代竞品”且进行交叉打假，让调研不仅是排版，更具备战略判定！
-- 🎥 **多模态强网捕捞 (Media Scraper Hooks)**：全面支持接入 Clawhub 的第三方反扒挂件，轻松吞吐 YouTube 或抖音等视频切片，甚至是 Twitter 等社交私域信息并做音频转录。
-- 🌩️ **高并发智能派生 (Orchestrator-Worker 架构)**：接收需求时绝不阻塞主聊天，使用原生指令静默唤醒多只 ARC 矿工 Sub-agent 在后台极速吞吐采集。
-- 🔄 **全自动去重**：三级检测 + 增量合并，同一主体只维护一份"活报告"
-- 📚 **知识编译**：借鉴 Karpathy LLM Wiki，每次调研增量编译个人知识图谱
-- 📤 **插件式极简投递**：严禁占用用户的聊天框长篇大论，所有大批次文档严格做物理切片，直投附件包裹给 Telegram/移动客户机端。
+- 📚 **Karpathy LLM Wiki 架构**：彻底废弃流水账报告，改用 `raw/` (生肉), `sources/` (解读), `entities/` (实体卡片) 和 `index.md` (总索引) 构筑真正意义上的知识网络！
+- ⏰ **双轨记账 (Time-Dimension Tracker)**：Sources 文件自带 `YYYY-MM-DD` 目录切片，且自动查杀并注入 YAML Frontmatter Date，兼顾知识的长期结晶与时间快照查询。
+- 🌩️ **高并发智能调度 (Orchestrator-Worker)**：引入 `arc-reactor-config.yaml`。Ingest / Query / Lint 工作流可分别调度 `GPT-4o`、`Claude-3.5` 和 `Gemini-Flash` 等不同梯队的大脑，完美平衡智商与 Token 成本。
+- 🛡️ **底层反幻觉防线**：全面启用 `--stdin` 管道数据传输脱离 Shell 限制；具备 Workspace 向上自动探测防错抓取；执行终局“附件必达”强制文件投递。
 
 ## 📦 环境配给与安装升级 (Installation & Bootstrap)
 
@@ -49,26 +47,21 @@ git pull origin main
 
 ---
 
-## 🗄️ 输出与存储形式
+## 🗄️ 核心原理：Compilation over Retrieval
 
-当你给 Agent 发送一条带调研任务的链接时，ARC 抓取完数据后并不只是抛出一篇一次性的回答，而是会沉淀出一个 **“双轨制”** 静态资料库系统：
+当你给 Agent 发送一条网页链接并要求 `Ingest`（深度归档入库）时，ARC 不是输出一份一次性的回答，而是会在后台执行**“四连击（4-combo）”**，将知识化整为零并永久沉淀在你的 Workspace 中：
 
-### 维度 1: 流水账大厅 (历史快照)
-**物理路径举例**：`workspace/reports/YYYY-MM-DD/`
-
-这是单次调研的固定切片，代表它在某一天的定格模样。结构包含：
-- **`[主题名]-调研报告.md`**：自动生成标准化排版的文档，含基本信息、核心事实、结论和关联溯源表。
-- **`raw/` 文件夹**：存放抓取该文档时一并拉取的音视频原转录稿、网页快照和图像原卷。
-
-### 维度 2: 知识编译中心 (Karpathy 活字典模式)
-**物理路径举例**：`workspace/knowledge/`
-
-这是 ARC Reactor 的**真正威力核心**。报告一旦生成，会触发背后的“知识编译器”进行处理：
-- 抽取**实体页** (`entities/[实体].md`)：如同剥洋葱，多次涉及“OpenAI”的新老报告会被无缝挂载、补充至此实体的独立卡片下，而不是生成一堆散乱文档。
-- 抽取**概念网络** (`concepts/[方法论].md`) 和 **冲突自检** (`conflicts/`)：对于老资料与新报告之间的参数和定性打架，全自动生成矛盾审查记录给用户过目。
-- 后端最终会通过自带的 `dispatchers/obsidian.md` 调度器直接推送到你自己的 iCloud Obsidian 等客户端下。
-
----
+```text
+workspace/arc-reactor-doc/wiki/
+├── sources/
+│   └── YYYY-MM-DD/
+│       └── [topic_slug].md  ← 第一击：保存特定时间的阅读摘要备忘
+├── entities/
+│   └── [topic].md           ← 第二击：抽取名词概念卡片，在旧卡片上做增量合并
+├── index.md                 ← 第三击：立刻更新全库大门总目录
+└── log.md                   ← 第四击：留下执行审计记录
+```
+任何后续的问题（**Query**），大模型都会主动阅读 `index.md` 选择相关卡片作答，真正做到“基于您的私域百科全书”说话。
 
 ## 目录结构
 
