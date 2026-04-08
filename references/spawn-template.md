@@ -136,3 +136,26 @@ mlx_whisper /tmp/arc-audio.mp3 --language zh --output-format txt --output-dir /t
 | `{TAGS}` | 标签列表 | `"minimax", "hermes", "agent"` |
 | `{USER_ID}` | 用户 Telegram ID | `5930392031` |
 | `{EXISTING_ENTITIES_LIST}` | 已有实体列表 | `- [[Hermes-Agent]]\n- [[OpenClaw]]` |
+
+---
+
+## Knowledge Base Configuration
+
+When spawning a worker for a specific knowledge base, include the following parameters:
+
+```markdown
+## Knowledge Base Configuration
+- KB Name: {{kb_name}}
+- KB Root: {{kb_root}}
+- All archive-manager.py commands MUST include: --root {{kb_root}}
+```
+
+Example:
+```markdown
+## Knowledge Base Configuration
+- KB Name: work-collaboration
+- KB Root: cwork-kb
+- All archive-manager.py commands MUST include: --root cwork-kb
+```
+
+When this section is present in the spawn template, the worker MUST use `--root {{kb_root}}` in every `archive-manager.py` invocation. If not present, default to `--root arc-reactor-doc`.

@@ -60,3 +60,78 @@ EOF_ARC_DOC
 
 ---
 *Powered by ARC Factory V4.0.5 | Karpathy Wiki Arch*
+
+---
+
+## Multi-Knowledge Base Management
+
+### 概念说明
+
+ARC Reactor 支持多个独立知识库 (Knowledge Base, KB)，每个 KB 拥有独立的目录树（`wiki/sources/`, `wiki/entities/`, `wiki/concepts/`）和独立的 index/log 文件。典型场景：
+
+| KB | Root 目录 | 用途 |
+|----|-----------|------|
+| `personal-learning` | `arc-reactor-doc/` | 个人学习、外部论文、开源分析 |
+| `work-collaboration` | `cwork-kb/` | 工作协同数据、合同、汇报、审批 |
+
+知识库之间**物理隔离**，不共享 entity 或 source 文件，确保数据边界清晰。
+
+### 首次使用 Onboarding
+
+当用户首次要求 ingest 内容且没有明确指定目标知识库时：
+
+1. 检查 `arc-reactor-config.yaml` 中 `knowledge_bases` 是否已有匹配条目
+2. 如果内容来源（如 cwork-api）匹配某个 KB 的 `auto_route.sources`，自动路由到该 KB
+3. 如果无匹配，提示用户："要存到哪个知识库？已有的有 xxx，或者用 `--kb-init` 新建一个"
+4. 如果用户说"新建"，执行 `--kb-init` 流程
+
+### 新建知识库 (`--kb-init`)
+
+```bash
+python3 skills/arc-reactor/scripts/archive-manager.py \
+  --kb-init \
+  --root cwork-kb \
+  --name "工作协同" \
+  --description "CWork工作协同数据"
+```
+
+该命令会：
+- 创建 `<root>/wiki/{sources,entities,concepts}/` 目录结构
+- 生成 `wiki/index.md` 和 `wiki/log.md`
+- 自动在 `arc-reactor-config.yaml` 的 `knowledge_bases` 列表中追加新条目
+- 输出 JSON 回执确认创建成功
+
+### 列出知识库 (`--kb-list`)
+
+```bash
+python3 skills/arc-reactor/scripts/archive-manager.py --kb-list
+```
+
+输出每个 KB 的统计信息：source 数量、entity 数量、最后更新时间。
+
+### 归档路由规则（三层优先级）
+
+执行 Ingest 时，确定目标 KB 的优先级：
+
+1. **来源识别**（最高优先级）：根据内容的 API 来源自动匹配
+   - `cwork-api`, `cwork-query-report`, `cwork-send-report` → `cwork-kb`
+   - `web_fetch`, `web_search`, `youtube` → `arc-reactor-doc`
+   - 匹配逻辑由 `resolve_kb_root(content_source, tags)` 函数实现
+2. **用户指定**：用户明确说"存到 xxx 知识库"或传入 `--root xxx`
+3. **问用户**：无法自动匹配时，暂停并询问用户存到哪个 KB
+
+### 查询策略（三级）
+
+1. **用户指定库查询**：用户说"在工作知识库里查 xxx" → 只查指定 KB 的 wiki 目录
+2. **AI 建议查哪个库**：根据问题关键词匹配 `auto_route.tags`，建议最相关的 KB
+3. **跨库搜索**：不确定时，用 `grep -r` 遍历所有 KB 的 wiki 目录，汇总结果
+
+### 交互命令速查
+
+| 命令 | 用途 |
+|------|------|
+| `--kb-init --root NAME --name "显示名" --description "描述"` | 新建知识库 |
+| `--kb-list` | 列出所有知识库及统计 |
+| `resolve_kb_root(source, tags)` | 程序化路由判断（Python 调用） |
+| `--lint --root NAME` | 对指定 KB 执行健康检查 |
+| `--type source --root NAME ...` | 归档到指定 KB |
