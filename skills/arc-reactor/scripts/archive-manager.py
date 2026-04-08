@@ -14,17 +14,172 @@ def slugify(text):
     text = re.sub(r'[\s_-]+', '-', text).strip('-')
     return text if text else "untitled"
 
+WIKI_LINK_RE = re.compile(r'\[\[([^\]]+)\]\]')
+
+def find_doc_root(start_path, root_name='arc-reactor-doc'):
+    """Walk up from start_path to find the workspace root."""
+    curr_dir = start_path
+    while curr_dir and curr_dir != '/':
+        if os.path.exists(os.path.join(curr_dir, root_name)):
+            return os.path.join(curr_dir, root_name)
+        if os.path.exists(os.path.join(curr_dir, '.git')):
+            return os.path.join(curr_dir, root_name)
+        curr_dir = os.path.dirname(curr_dir)
+    return os.path.join(start_path, root_name)
+
+def lint_wiki(doc_root, fix=False):
+    """Health check for Wiki integrity. Returns issues found."""
+    issues = []
+    fixed = []
+    
+    wiki_dir = os.path.join(doc_root, 'wiki')
+    if not os.path.exists(wiki_dir):
+        return {"status": "error", "message": f"Wiki directory not found: {wiki_dir}"}
+    
+    # 1. Scan all entity files
+    entities_dir = os.path.join(wiki_dir, 'entities')
+    existing_entities = set()
+    if os.path.exists(entities_dir):
+        for f in os.listdir(entities_dir):
+            if f.endswith('.md'):
+                existing_entities.add(f[:-3])  # strip .md
+    
+    # 2. Scan all source files for wiki-links
+    all_links = set()
+    sources_dir = os.path.join(wiki_dir, 'sources')
+    all_files = []
+    
+    # Collect all markdown files
+    for root, dirs, files in os.walk(wiki_dir):
+        for f in files:
+            if f.endswith('.md'):
+                all_files.append(os.path.join(root, f))
+    
+    for fpath in all_files:
+        try:
+            with open(fpath, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Find all [[wiki-links]]
+                links = WIKI_LINK_RE.findall(content)
+                for link in links:
+                    slug = slugify(link)
+                    all_links.add(slug)
+                    
+                    # Check for orphan links
+                    if slug not in existing_entities:
+                        rel_path = os.path.relpath(fpath, doc_root)
+                        issues.append({
+                            "type": "orphan_link",
+                            "link": f"[[{link}]]",
+                            "slug": slug,
+                            "found_in": rel_path,
+                            "fix": f"Create entity: wiki/entities/{slug}.md"
+                        })
+                        # Auto-fix: create stub entity
+                        if fix and not os.path.exists(os.path.join(entities_dir, f"{slug}.md")):
+                            stub = f"---\ndate: {datetime.now().strftime('%Y-%m-%d')}\n---\n\n# {link}\n\n> Stub entity — awaiting Ingest completion.\n"
+                            stub_path = os.path.join(entities_dir, f"{slug}.md")
+                            with open(stub_path, 'w', encoding='utf-8') as ef:
+                                ef.write(stub)
+                            fixed.append(f"Created stub: wiki/entities/{slug}.md")
+        except Exception:
+            continue
+    
+    # 3. Check entities not in index.md
+    index_path = os.path.join(wiki_dir, 'index.md')
+    indexed_entities = set()
+    if os.path.exists(index_path):
+        with open(index_path, 'r', encoding='utf-8') as f:
+            index_content = f.read()
+            indexed_links = WIKI_LINK_RE.findall(index_content)
+            for link in indexed_links:
+                indexed_entities.add(slugify(link))
+    
+    for entity in existing_entities:
+        if entity not in indexed_entities:
+            issues.append({
+                "type": "missing_from_index",
+                "entity": entity,
+                "fix": f"Add [[{entity}]] to wiki/index.md"
+            })
+    
+    # 4. Check source files missing date
+    if os.path.exists(sources_dir):
+        for root, dirs, files in os.walk(sources_dir):
+            for f in files:
+                if f.endswith('.md'):
+                    fpath = os.path.join(root, f)
+                    try:
+                        with open(fpath, 'r', encoding='utf-8') as sf:
+                            content = sf.read()
+                            if 'date:' not in content[:500].lower():
+                                rel_path = os.path.relpath(fpath, doc_root)
+                                issues.append({
+                                    "type": "missing_date",
+                                    "file": rel_path,
+                                    "fix": "Add date field to frontmatter"
+                                })
+                    except Exception:
+                        continue
+    
+    # 5. Check for empty files (< 50 bytes)
+    for fpath in all_files:
+        try:
+            if os.path.getsize(fpath) < 50:
+                rel_path = os.path.relpath(fpath, doc_root)
+                issues.append({
+                    "type": "empty_file",
+                    "file": rel_path,
+                    "fix": "Populate or remove empty file"
+                })
+        except Exception:
+            continue
+    
+    return {
+        "status": "lint_complete",
+        "total_files": len(all_files),
+        "total_entities": len(existing_entities),
+        "total_links": len(all_links),
+        "issues_found": len(issues),
+        "issues_fixed": len(fixed),
+        "issues": issues,
+        "fixed": fixed
+    }
+
 def main():
     parser = argparse.ArgumentParser(description='ARC Reactor V4 Archive Manager (Karpathy Wiki Edition)')
+    parser.add_argument('--lint', action='store_true', help='Run Wiki health check')
+    parser.add_argument('--fix', action='store_true', help='Auto-fix issues found during lint')
     parser.add_argument('--type', choices=[
         'raw', 'source', 'entity', 'concept', 'index', 'log', 'template'
-    ], required=True, help='归档进入的 Wiki 圈层类型')
+    ], required=False, help='归档进入的 Wiki 圈层类型')
     
     parser.add_argument('--topic', required=False, default='knowledge-node', help='话题/实体名 (用于生成文件名)')
     parser.add_argument('--stdin', action='store_true', help='强制通过标准输入读取内容 (防止转义错误)')
     parser.add_argument('--root', default='arc-reactor-doc', help='文档根目录名称')
+    parser.add_argument('--date', required=False, default=None, help='指定的日期戳，缺省为今日')
+    parser.add_argument('--dedup', choices=['merge', 'skip', 'overwrite'], default='overwrite',
+                        help='去重策略: merge=增量合并, skip=跳过, overwrite=覆盖(默认)')
 
     args = parser.parse_args()
+
+    # Lint mode — separate flow
+    if args.lint:
+        cwd = os.getcwd()
+        doc_root = find_doc_root(cwd, args.root)
+        result = lint_wiki(doc_root, fix=args.fix)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
+
+    # Normal archive mode — type is required
+    if not args.type:
+        print(json.dumps({"status": "error", "message": "归档模式需要 --type 参数，或使用 --lint 进行健康检查"}))
+        sys.exit(1)
+
+    # 0. 预计算常用值
+    topic_slug = slugify(args.topic)
+    now_date = datetime.now().strftime('%Y-%m-%d')
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     # 1. 验证必须使用 --stdin
     if not args.stdin:
@@ -38,35 +193,19 @@ def main():
 
     # 2. 确定物理路径
     cwd = os.getcwd()
-    
-    # 自动探测工作区根目录 (向上一圈圈遍历寻找 arc-reactor-doc 或 .git)
-    doc_root = None
-    curr_dir = cwd
-    while curr_dir and curr_dir != '/':
-        # 如果当前大目录下有我们想要的归档文件夹，这就是正确的工作区
-        if os.path.exists(os.path.join(curr_dir, args.root)):
-            doc_root = os.path.join(curr_dir, args.root)
-            break
-        # 如果碰到 .git，也认为到达了顶层
-        if os.path.exists(os.path.join(curr_dir, '.git')):
-            doc_root = os.path.join(curr_dir, args.root)
-            break
-        curr_dir = os.path.dirname(curr_dir)
-        
-    # 如果全遍历完都没找到，兜底使用最初的 cwd
-    if not doc_root:
-        doc_root = os.path.join(cwd, args.root)
+    doc_root = find_doc_root(cwd, args.root)
 
     target_dir = ""
     filename = ""
-    topic_slug = slugify(args.topic)
+    # topic_slug already computed above
     
     # Wiki 层路由判定
     if args.type == 'raw':
         target_dir = os.path.join(doc_root, 'raw')
         filename = f"{topic_slug}.md"
     elif args.type == 'source':
-        target_dir = os.path.join(doc_root, 'wiki', 'sources', args.date)
+        date_dir = args.date if args.date else now_date
+        target_dir = os.path.join(doc_root, 'wiki', 'sources', date_dir)
         filename = f"{topic_slug}.md"
     elif args.type == 'entity':
         target_dir = os.path.join(doc_root, 'wiki', 'entities')
@@ -95,8 +234,7 @@ def main():
     target_path = os.path.join(target_dir, filename)
     mode = 'w'
     final_write_content = content_to_write
-    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    now_date = datetime.now().strftime('%Y-%m-%d')
+    # now_str and now_date already computed above
 
     if args.type in ['index', 'log']:
         # index 和 log 永远是增量追加
@@ -126,6 +264,39 @@ def main():
             # 完全没有 YAML Frontmatter 格式，强制注入一个
             final_write_content = f"---\ndate: {now_date}\n---\n\n" + content_stripped
 
+    # 4.5 去重检查 (dedup check)
+    dedup_status = "new"
+    if os.path.exists(target_path) and args.dedup != 'overwrite':
+        existing_size = os.path.getsize(target_path)
+        if args.dedup == 'skip':
+            with open(target_path, 'rb') as ef:
+                existing_checksum = hashlib.sha256(ef.read()).hexdigest()
+            receipt = {
+                "status": "skipped",
+                "dedup": "skipped",
+                "type_routed": args.type,
+                "path": target_path,
+                "size_bytes": existing_size,
+                "checksum": existing_checksum,
+                "message": f"Entity already exists ({existing_size} bytes). Skipped per --dedup skip."
+            }
+            print(json.dumps(receipt, ensure_ascii=False))
+            sys.exit(0)
+        elif args.dedup == 'merge':
+            # For entity/concept: append (mode already set above)
+            # For source: refuse to merge, warn instead
+            if args.type == 'source':
+                receipt = {
+                    "status": "skipped",
+                    "dedup": "source_exists",
+                    "type_routed": args.type,
+                    "path": target_path,
+                    "message": f"Source already exists. Use --dedup overwrite to replace, or pick a different topic."
+                }
+                print(json.dumps(receipt, ensure_ascii=False))
+                sys.exit(0)
+            dedup_status = "merged"
+
     # 5. 原子落盘及防幻觉回执生成
     try:
         with open(target_path, mode, encoding='utf-8') as f:
@@ -138,6 +309,7 @@ def main():
             
         receipt = {
             "status": "success",
+            "dedup": dedup_status,
             "type_routed": args.type,
             "path": target_path,
             "size_bytes": size_bytes,
