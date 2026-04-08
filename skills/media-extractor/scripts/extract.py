@@ -29,23 +29,40 @@ def extract_audio(url, output_dir):
     """
     print(f"[INFO] 正在调用 yt-dlp 剥离流媒体纯音频: {url} ...")
     
-    # We download as .m4a because it's fast and natively supported.
-    # --force-overwrites ensures we don't halt on prompt
     outtmpl = os.path.join(output_dir, "extracted_audio.%(ext)s")
-    
-    cmd = [
+    base_cmd = [
         "yt-dlp",
         "-x",  # Extract audio
         "--audio-format", "m4a",
         "--force-overwrites",
-        "-o", outtmpl,
-        url
+        "-o", outtmpl
     ]
-    
-    try:
-        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError as e:
-        print(f"[ERROR] yt-dlp 下载失败. 可能是受到强反爬或链接无效.\n{e.stderr.decode()}")
+
+    # 为了应对反爬（尤其是抖音/TikTok要求新鲜Cookie），设定一组穿透策略
+    strategies = [
+        [],  # 策略1：先尝试不带 Cookie 硬穿
+        ["--cookies-from-browser", "safari"],  # 策略2：借用 Mac 自带 Safari
+        ["--cookies-from-browser", "chrome"],  # 策略3：借用 Chrome
+        ["--cookies-from-browser", "edge"]     # 策略4：借用 Edge
+    ]
+
+    success = False
+    for strategy in strategies:
+        cmd = base_cmd + strategy + [url]
+        msg_suffix = " (无Cookie)" if not strategy else f" (借助 {strategy[1]} Cookie 渗透)"
+        print(f"[INFO] 尝试穿透反爬网关{msg_suffix}...")
+        
+        try:
+            # 捕获输出以避免满屏幕刷红报错
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                success = True
+                break
+        except Exception:
+            continue
+
+    if not success:
+        print(f"[ERROR] 所有的反爬穿透策略均已失效. 可能需要手动从浏览器导出 cookies.txt 给 yt-dlp。")
         sys.exit(1)
         
     expected_file = os.path.join(output_dir, "extracted_audio.m4a")
