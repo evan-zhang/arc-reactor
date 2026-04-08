@@ -1,5 +1,5 @@
 version: 1
-last_updated_at: 2026-04-08T01:38:44Z
+last_updated_at: 2026-04-08T11:23:00Z
 items:
   - id: RT-001
     title: tpr-framework-maintenance
@@ -23,3 +23,23 @@ items:
     owner: evan
     created_at: 2026-04-08T01:12:23Z
     closed_at: 2026-04-08T01:38:44Z
+  - id: RT-004
+    title: archive-manager-implementation
+    type: Feature
+    profile: Spec-Lite
+    status: in-progress
+    modules:
+      - arc-reactor-core
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-08T10:54:00Z
+  - id: RT-005
+    title: codifying-skill-dev-standards
+    type: Documentation
+    profile: Spec-Lite
+    status: intake
+    modules:
+      - aodw-governance
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-08T11:20:00Z
