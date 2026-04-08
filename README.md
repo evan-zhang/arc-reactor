@@ -1,24 +1,28 @@
-# ARC Reactor (AODW-Next Skill)
+# ARC Reactor v2.0 (AODW-Next Skill)
 
 > **⚠️ AI-First Repository**
 > This repository is designed **primarily for AI Agents**, specifically for the [OpenClaw](https://openclaw.ai) ecosystem. If you are an AI/Agent reading this, please process the `SKILL.md` as your primary entry point. Human developers are welcome to contribute, but the file structures and documentation style favor agentic cognitive ingestion.
 
 **ARC = Acquire / Research / Catalogue**
 
-面向个人知识建设的 AI 调研引擎。给它一个链接或话题，它自动完成获取→研究→编目的全链路。
+面向个人知识建设的 AI 调研引擎。给它一个链接或话题，它不仅仅能剥离内容，更会**挂载多路爬虫组件与外联搜索**自动完成 获取→真伪勘察对比→编目的全链路，为你凝结真正的竞争分析洞察。
 
-## 特性
+## 🎯 v2.0 终极演进特性
 
+- 🕵️ **广域交叉核网 (Active Extended Probing)**：打破只看原链接的偏信束缚，自发调用 API 全网搜寻原素材的“替代竞品”且进行交叉打假，让调研不仅是排版，更具备战略判定！
+- 🎥 **多模态强网捕捞 (Media Scraper Hooks)**：全面支持接入 Clawhub 的第三方反扒挂件，轻松吞吐 YouTube 或抖音等视频切片，甚至是 Twitter 等社交私域信息并做音频转录。
 - 🌩️ **高并发智能派生 (Orchestrator-Worker 架构)**：接收需求时绝不阻塞主聊天，使用原生指令静默唤醒多只 ARC 矿工 Sub-agent 在后台极速吞吐采集。
-- 🔍 **智能路由**：自动识别 7 种输入类型（文章/视频/仓库/论文/社交/话题/文件）
 - 🔄 **全自动去重**：三级检测 + 增量合并，同一主体只维护一份"活报告"
-- ✅ **二次复检**：对关键声明交叉验证，标注可信度等级
 - 📚 **知识编译**：借鉴 Karpathy LLM Wiki，每次调研增量编译个人知识图谱
-- 📤 **插件式导出**：支持 Obsidian 同步，预留 Notion/Webhook 扩展
+- 📤 **插件式极简投递**：严禁占用用户的聊天框长篇大论，所有大批次文档严格做物理切片，直投附件包裹给 Telegram/移动客户机端。
 
-## 📦 安装与升级指引 (Installation & Upgrade)
+## 📦 环境配给与安装升级 (Installation & Bootstrap)
 
-ARC Reactor 是典型的 **OpenClaw Skill 组件**。安装即代表为你的 Agent 外挂了这套强大的知识捕获管线。
+ARC Reactor 是强依赖外部基建配置的重型骨干插件。为了达成它最核心的能力，在第一次安装运行后，你可以让 Agent 为你进行**“基建环境核验”**，它会提示你准备下列组件：
+1. **Google/AI 搜索引擎 Key** (用于提供给 R 阶段执行自主查杀核实) 
+2. **专属第三方 Clawhub 平台防串线网络技能** (挂接获取音视频轨的底层工具)
+
+详细引导参见：`references/env-setup.md`
 
 ### 新装 (New Installation)
 在 OpenClaw 的终端或通过宿主机器直接执行克隆：
