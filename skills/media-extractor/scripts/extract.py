@@ -147,20 +147,26 @@ if __name__ == "__main__":
     
     output_md_path = os.path.join(base_dir, "final_transcript.md")
     
-    # 步骤 1：全自动音频降维下载
-    pure_url = extract_url_from_text(args.url)
-    clean_url = resolve_short_url(pure_url)
-    audio_file = extract_audio(clean_url, base_dir)
+    # 步骤 1：分析入参是本地物理文件还是需要反爬下载的 URL
+    if os.path.exists(args.url):
+        print(f"[INFO] 监测到传入的是本地物理文件！瞬间绕过所有爬虫封锁网关，直通 MLX 神经核！")
+        audio_file = args.url
+    else:
+        # 网络下载管线
+        pure_url = extract_url_from_text(args.url)
+        clean_url = resolve_short_url(pure_url)
+        audio_file = extract_audio(clean_url, base_dir)
     
     # 步骤 2：基于 M 系列芯片的快速离线解密
     result_path = transcribe_audio(audio_file, output_md_path)
     
     # 步骤 3：清理巨大音频残骸以防挤爆硬盘
-    try:
-         os.remove(audio_file)
-         print(f"[INFO] 临时音频文件已清理脱落...")
-    except Exception:
-         pass
+    if not os.path.exists(args.url): # 只有自己下载的中间件才清理，保护用户物理降级传输进来的原文件
+        try:
+             os.remove(audio_file)
+             print(f"[INFO] 临时音频文件已清理脱落...")
+        except Exception:
+             pass
          
     # 结果供外部 Agent 拿取
     print("\n==== 给 Agent 的指示 ====")
