@@ -1,2 +1,0 @@
-mlx-whisper
-yt-dlp
