@@ -2,14 +2,25 @@ import sys
 import os
 import subprocess
 import argparse
+import re
 from pathlib import Path
 
 # Try to import mlx_whisper. If it's missing, provide a clear error trace for the Agent.
 try:
     import mlx_whisper
 except ImportError:
-    print("[ERROR] mlx_whisper is not installed. Please run: pip install mlx-whisper yt-dlp")
+    print("[ERROR] mlx_whisper is not installed. Please run: pip3 install mlx-whisper yt-dlp")
+    print("[提示] 并在运行时使用 `python3` 代替 `python`！")
     sys.exit(1)
+
+def extract_url_from_text(text):
+    """
+    如果用户塞进来的是一大片口令（例如抖音的分享文案），强制用正则把 http 链接抠出来。
+    """
+    match = re.search(r'(https?://[^\s]+)', text)
+    if match:
+        return match.group(1)
+    return text
 
 def extract_audio(url, output_dir):
     """
@@ -85,7 +96,8 @@ if __name__ == "__main__":
     output_md_path = os.path.join(base_dir, "final_transcript.md")
     
     # 步骤 1：全自动音频降维下载
-    audio_file = extract_audio(args.url, base_dir)
+    clean_url = extract_url_from_text(args.url)
+    audio_file = extract_audio(clean_url, base_dir)
     
     # 步骤 2：基于 M 系列芯片的快速离线解密
     result_path = transcribe_audio(audio_file, output_md_path)
