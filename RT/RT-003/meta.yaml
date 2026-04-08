@@ -1,6 +1,6 @@
 id: RT-003
 title: Media Extractor Component Development
-status: In-Progress
+status: Completed
 created_at: '2026-04-08'
 description: >
   Establish a dedicated zero-cost local media transcription extractor

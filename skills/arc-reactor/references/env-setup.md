@@ -22,8 +22,9 @@
 | `youtube-dl-agent` / `whisper-sub` | 视频流 | 当目标 URL 是 Bilibili/YouTube 时，调用该挂件扒原视频及字幕转录。 |
 | `xhs-claw` / `douyin-spider` | 封闭流媒体社交 | 当目标属于强反爬私域（小红书/抖音等）时进行免密滑块穿透。 |
 | `twitter-mcp` / `reddit-scraper` | 文本强社交 | 当目标是 X 平台，获取其底下的回帖与社交反响。 |
-| `browser-use-agent` (🔥首推) | 复杂动态网页/SPA | 当遇到有极其复杂的 JS 渲染、弹窗或者重度验证的网站时，**强烈建议**调用集成 LLM 的终极开源自动机 Browser Use 代为全自动导航提取。 |
-| `playwright-mcp` | 高速廉价视觉树操作 | 遇到不需要高自主性只需要高速完成 DOM 操作或截屏的 CI 轻网页。 |
+| `browser-use` (🔥首推) | 复杂动态网页/SPA | 原生内置于 Python Agent 的极致操控。当遇到有极其复杂的 JS 渲染、弹窗或者重度滑块验证的网站时，**强烈建议**调用集成自研 Browser Use 模型代为全自动人类级导航提取。 |
+| `playwright-mcp` | 高速轻量视觉操作 | 遇到不需要高层自主性，仅需低成本毫秒级切取视觉 DOM 树或截屏记录的网页。 |
+| `agent-browser` | Token 极简抠取引擎 | 由 Vercel 出品。对于极长或含有海量垃圾标签的旧式网页，其特有的 Rust 底层压缩引擎可帮 ARC 矿工在广域大面积搜索时节省最高 93% 的上下文 Token 计费。 |
 
 ## 3. 自检协议
 跟 Obsidian 的验证一样，在装配完毕后，Agent 应该用测试指令试探一下环境引擎是否就绪：
