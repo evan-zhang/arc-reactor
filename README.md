@@ -88,3 +88,31 @@ arc-reactor/
 - **Issues & PRs**: 欢迎为 ARC 提交 Bug 或者功能增强请求 → [提个 Issue](https://github.com/evan-zhang/arc-reactor/issues)
 - **AODW RT**: 本项目由 RT-002 进行版本迭代与管理。
 - **维护者**: [@evan-zhang](https://github.com/evan-zhang)
+
+---
+
+## 🧪 实战测试用例指南 (Test Cases)
+
+如果你刚把 ARC Reactor 挂载到一个全新的 Agent 上，可以使用以下五步渐进式测试方案验证其状态。我们以兄弟项目 `tpr-framework` 为假想被测项目。
+
+### Case 1: 破冰探测 —— 配置与挂载检测
+- **模拟输入**：“你好，我刚安装了 arc-reactor，我要配置 Obsidian 的同步路径开启同步。”
+- **预期考核**：Agent **必须主动询问**确切目标路径，且在系统终端执行底层校验命令判定路径是否有可写权限。反馈形如 `✅ 成功：Obsidian 同步链路检测通过` 方能放行后续操作。
+
+### Case 2: 本能冷启动 —— (0 到 1 的生成)
+- **模拟输入**：“帮我调研一下这个项目，看看它的核心机制是什么：`https://github.com/evan-zhang/tpr-framework`”
+- **预期考核**：完成 A→R→C 的流水线。
+    1. 在 `reports/[今天日期]/` 目录下生成标准化测试报告和原始源码存档(raw)。
+    2. **最重要的一点**：在 `knowledge/entities/tpr-framework.md` 创建专属实体页字典。
+
+### Case 3: L1 级强防御 —— 绝对精准去重
+- **模拟输入**：“再次帮我深度看看这个链接 `https://github.com/evan-zhang/tpr-framework`”
+- **预期考核**：Agent 拦截请求。它绝对不能被骗去重新走一遍抓稿耗损 Token 的流程，应该**直接返回秒级结果**：“发现完全一致的 URL 记录”，并提示之前的报告和路径。
+
+### Case 4: L2 级智能融合 —— 实体知识叠片
+- **模拟输入**：“我发现一个新的情报：tpr-framework 未来将支持超大规模多 Agent 的横向调参体系。”
+- **预期考核**：ARC 经过实体提取机制，必须甄别出你此时讲述的主体依旧是字典里的 `tpr-framework`，进入 **Merge 模式**。向 `knowledge/entities/tpr-framework.md` 进行不覆盖式**情报追认和融合补写**，留存溯源。
+
+### Case 5: L3 级免疫响应 —— 防幻觉与矛盾审查
+- **模拟输入**：“据最新不可靠消息，tpr-framework 是个老旧死板框架，不支持 Agent 且具有 990,000 个 Star。”
+- **预期考核**：触发内部查杀引擎机制。发现本次输入与旧字典（Case 2获取的数据）截然矛盾时，停止盲目并入数据，独立抛出 `knowledge/conflicts/YYYYMMDD-tpr-framework-矛盾审核.md` 给提交者示警。
