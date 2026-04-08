@@ -66,7 +66,7 @@ def main():
         target_dir = os.path.join(doc_root, 'raw')
         filename = f"{topic_slug}.md"
     elif args.type == 'source':
-        target_dir = os.path.join(doc_root, 'wiki', 'sources')
+        target_dir = os.path.join(doc_root, 'wiki', 'sources', args.date)
         filename = f"{topic_slug}.md"
     elif args.type == 'entity':
         target_dir = os.path.join(doc_root, 'wiki', 'entities')
@@ -96,6 +96,7 @@ def main():
     mode = 'w'
     final_write_content = content_to_write
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_date = datetime.now().strftime('%Y-%m-%d')
 
     if args.type in ['index', 'log']:
         # index 和 log 永远是增量追加
@@ -109,6 +110,16 @@ def main():
         # 知识节点增量追加
         mode = 'a'
         final_write_content = f"\n\n---\n## 增量知识点合入 ({now_str})\n\n" + content_to_write
+        
+    # 自动探测并注入 Frontmatter 时间戳 (仅对新建的文件有效)
+    if mode == 'w' and final_write_content.strip().startswith('---'):
+        lines = final_write_content.strip().splitlines()
+        # 扫描前20行看有没有 date: 字段
+        has_date = any(line.lower().startswith('date:') for line in lines[:20])
+        if not has_date and len(lines) > 1:
+            # 在第一行 --- 下面插入 date
+            lines.insert(1, f"date: {now_date}")
+            final_write_content = "\n".join(lines)
 
     # 5. 原子落盘及防幻觉回执生成
     try:
