@@ -56,17 +56,30 @@ def extract_audio(url, output_dir):
     ]
 
     # 为了应对反爬（尤其是抖音/TikTok要求新鲜Cookie），设定一组穿透策略
-    strategies = [
-        [],  # 策略1：先尝试不带 Cookie 硬穿
-        ["--cookies-from-browser", "safari"],  # 策略2：借用 Mac 自带 Safari
-        ["--cookies-from-browser", "chrome"],  # 策略3：借用 Chrome
-        ["--cookies-from-browser", "edge"]     # 策略4：借用 Edge
-    ]
+    # 按照优先级：物理文件 > 无Cookie盲扎 > 借用各家浏览器
+    physical_cookie_path = os.path.expanduser("~/.openclaw/media/cookies.txt")
+    strategies = []
+    
+    if os.path.exists(physical_cookie_path):
+        strategies.append(["--cookies", physical_cookie_path])
+        
+    strategies.extend([
+        [],  # 策略2：先尝试不带 Cookie 硬穿
+        ["--cookies-from-browser", "safari"],  # 策略3：借用 Mac 自带 Safari
+        ["--cookies-from-browser", "chrome"],  # 策略4：借用 Chrome
+        ["--cookies-from-browser", "edge"]     # 策略5：借用 Edge
+    ])
 
     success = False
     for strategy in strategies:
         cmd = base_cmd + strategy + [url]
-        msg_suffix = " (无Cookie)" if not strategy else f" (借助 {strategy[1]} Cookie 渗透)"
+        if not strategy:
+            msg_suffix = " (无Cookie)"
+        elif strategy[0] == "--cookies":
+            msg_suffix = " (调用物理 cookies.txt)"
+        else:
+            msg_suffix = f" (借助 {strategy[1]} Cookie 渗透)"
+            
         print(f"[INFO] 尝试穿透反爬网关{msg_suffix}...")
         
         try:
@@ -79,7 +92,12 @@ def extract_audio(url, output_dir):
             continue
 
     if not success:
-        print(f"[ERROR] 所有的反爬穿透策略均已失效. 可能需要手动从浏览器导出 cookies.txt 给 yt-dlp。")
+        print(f"\n[FATAL ERROR] 所有的反爬穿透策略 (包括本机浏览器伪造) 均遭遇字节跳动强力拦截关卡失效！")
+        print(f"[ACTION REQUIRED] 必须使用终极物理钥匙：")
+        print(f"1. 请在您的电脑浏览器打开一次 https://www.douyin.com/")
+        print(f"2. 使用 Chrome 插件 'Get cookies.txt LOCALLY' 导出一份 cookies.txt 文件")
+        print(f"3. 把它放到这个路径下: ~/.openclaw/media/cookies.txt")
+        print(f"4. 重新执行本指令即可无敌穿透！\n")
         sys.exit(1)
         
     expected_file = os.path.join(output_dir, "extracted_audio.m4a")
