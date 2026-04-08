@@ -1,0 +1,164 @@
+{
+  "version": "1.0.0",
+  "created": "2026-02-20T20:00:00Z",
+  "lastUpdated": "2026-02-20T20:00:00Z",
+  "stats": {
+    "totalDocs": 6,
+    "totalAgents": 1,
+    "totalTopics": 5,
+    "totalSize": "57KB"
+  },
+  "docs": [
+    {
+      "id": "model-disaster-recovery-system",
+      "title": "智能模型容灾降级系统",
+      "path": "agents/assistant-agent/model-disaster-recovery/",
+      "topic": "model-management",
+      "agent": "assistant-agent",
+      "type": "system-design",
+      "status": "completed",
+      "files": [
+        {
+          "name": "MODEL_MANAGER.md",
+          "description": "详细设计文档，包含错误分类、降级逻辑、状态管理"
+        },
+        {
+          "name": "README-MODEL-SYSTEM.md",
+          "description": "系统用户指南，包含快速开始和监控命令"
+        },
+        {
+          "name": "INTEGRATION-GUIDE.md",
+          "description": "Agent 集成指南，如何将系统集成到各个 agent"
+        },
+        {
+          "name": "AGENT_INTEGRATION_COMPLETE.md",
+          "description": "集成完成报告，所有 agents 的配置状态"
+        },
+        {
+          "name": "INTEGRATION_REPORT.md",
+          "description": "集成工作报告，包含完成情况和使用方法"
+        }
+      ],
+      "tags": ["model", "fallback", "disaster-recovery", "agent-integration"],
+      "summary": "完整的模型容灾降级系统，支持智能错误分类、差异化降级策略、自动恢复机制。包含 7 个 agents 的完整集成。",
+      "createdAt": "2026-02-20T12:00:00Z",
+      "updatedAt": "2026-02-20T20:00:00Z"
+    },
+    {
+      "id": "discord-file-sending-lessons",
+      "title": "Discord 文件发送经验总结",
+      "path": "lessons/discord-file-sending-lessons.md",
+      "topic": "discord-operations",
+      "agent": "assistant-agent",
+      "type": "lessons",
+      "status": "completed",
+      "files": [
+        {
+          "name": "discord-file-sending-lessons.md",
+          "description": "Discord 文件发送最佳实践，包含问题原因、解决方案、最佳实践模板"
+        }
+      ],
+      "tags": ["discord", "file-sending", "best-practices", "lessons"],
+      "summary": "在 Discord 中通过 OpenClaw message 工具发送文件的经验总结，包含正确的 target 格式、文件路径设置、media 参数使用等关键经验。",
+      "createdAt": "2026-02-20T21:00:00Z",
+      "updatedAt": "2026-02-20T21:00:00Z"
+    },
+    {
+      "id": "api-keys-checklist",
+      "title": "API Keys 配置清单",
+      "path": "API_KEYS_CHECKLIST.md",
+      "topic": "configuration",
+      "agent": "assistant-agent",
+      "type": "checklist",
+      "status": "completed",
+      "files": [
+        {
+          "name": "API_KEYS_CHECKLIST.md",
+          "description": "统一的 API Key 管理清单，包含当前配置状态和需要配置的 API Keys"
+        }
+      ],
+      "tags": ["api-keys", "configuration", "checklist", "setup"],
+      "summary": "OpenClaw 系统所需的 API Keys 完整清单，包括当前已配置的 API Keys、缺少的关键 API Keys、优先级排序、配置步骤和验证方法。",
+      "createdAt": "2026-02-20T22:00:00Z",
+      "updatedAt": "2026-02-20T22:00:00Z"
+    },
+    {
+      "id": "supported-models",
+      "title": "当前支持的大模型",
+      "path": "SUPPORTED_MODELS.md",
+      "topic": "models",
+      "agent": "assistant-agent",
+      "type": "reference",
+      "status": "completed",
+      "files": [
+        {
+          "name": "SUPPORTED_MODELS.md",
+          "description": "当前系统支持的所有大模型列表，按提供商、用途分类"
+        }
+      ],
+      "tags": ["models", "llm", "availability", "testing"],
+      "summary": "当前系统支持的 20 个大模型的完整列表，包括模型 ID、提供商、用途分类、Agent 分配和特殊配置。",
+      "createdAt": "2026-02-21T10:30:00Z",
+      "updatedAt": "2026-02-21T10:30:00Z"
+    },
+    {
+      "id": "model-availability-summary",
+      "title": "大模型可用性总结",
+      "path": "MODEL_AVAILABILITY_SUMMARY.md",
+      "topic": "models",
+      "agent": "assistant-agent",
+      "type": "summary",
+      "status": "completed",
+      "files": [
+        {
+          "name": "MODEL_AVAILABILITY_SUMMARY.md",
+          "description": "大模型可用性总结，基于现有配置和测试结果，区分已验证可用、配置了但有限制、可能需要额外配置的模型"
+        }
+      ],
+      "tags": ["models", "availability", "testing", "summary"],
+      "summary": "基于现有配置和测试结果的大模型可用性总结，区分已验证可用（7个）、配置了但可能有限制（7个）、可能需要额外配置（2个）的模型。包含 OpenAI Codex、MiniMax、GLM、Google、Amazon Bedrock 等提供商的模型。",
+      "createdAt": "2026-02-21T11:00:00Z",
+      "updatedAt": "2026-02-21T11:00:00Z"
+    }
+  ],
+  "agents": [
+    {
+      "id": "assistant-agent",
+      "name": "Assistant-Agent (Nova)",
+      "docs": 5,
+      "topics": ["model-management", "discord-operations", "configuration", "models"]
+    }
+  ],
+  "topics": [
+    {
+      "id": "model-management",
+      "name": "Model Management",
+      "description": "模型管理和容灾降级相关文档",
+      "docs": 1
+    },
+    {
+      "id": "discord-operations",
+      "name": "Discord Operations",
+      "description": "Discord 操作和文件发送相关文档",
+      "docs": 1
+    },
+    {
+      "id": "agent-integration",
+      "name": "Agent Integration",
+      "description": "Agent 集成和配置相关文档",
+      "docs": 1
+    },
+    {
+      "id": "configuration",
+      "name": "Configuration",
+      "description": "系统配置和 API Keys 管理相关文档",
+      "docs": 1
+    },
+    {
+      "id": "models",
+      "name": "Models",
+      "description": "大模型和 LLM 相关文档",
+      "docs": 2
+    }
+  ]
+}
