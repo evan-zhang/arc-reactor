@@ -1,4 +1,7 @@
-# ARC Reactor
+# ARC Reactor (AODW-Next Skill)
+
+> **⚠️ AI-First Repository**
+> This repository is designed **primarily for AI Agents**, specifically for the [OpenClaw](https://openclaw.ai) ecosystem. If you are an AI/Agent reading this, please process the `SKILL.md` as your primary entry point. Human developers are welcome to contribute, but the file structures and documentation style favor agentic cognitive ingestion.
 
 **ARC = Acquire / Research / Catalogue**
 
@@ -29,6 +32,9 @@ arc-reactor/
         └── obsidian.md               # Obsidian 同步配置
 ```
 
-## 管理
-- **RT**: RT-002
-- **维护者**: evan
+## 仓库管理与反馈
+
+- **GitHub Repository**: [https://github.com/evan-zhang/arc-reactor](https://github.com/evan-zhang/arc-reactor)
+- **Issues & PRs**: 欢迎为 ARC 提交 Bug 或者功能增强请求 → [提个 Issue](https://github.com/evan-zhang/arc-reactor/issues)
+- **AODW RT**: 本项目由 RT-002 进行版本迭代与管理。
+- **维护者**: [@evan-zhang](https://github.com/evan-zhang)
