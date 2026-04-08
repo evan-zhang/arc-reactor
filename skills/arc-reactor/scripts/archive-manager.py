@@ -38,7 +38,24 @@ def main():
 
     # 2. 确定物理路径
     cwd = os.getcwd()
-    doc_root = os.path.join(cwd, args.root)
+    
+    # 自动探测工作区根目录 (向上一圈圈遍历寻找 arc-reactor-doc 或 .git)
+    doc_root = None
+    curr_dir = cwd
+    while curr_dir and curr_dir != '/':
+        # 如果当前大目录下有我们想要的归档文件夹，这就是正确的工作区
+        if os.path.exists(os.path.join(curr_dir, args.root)):
+            doc_root = os.path.join(curr_dir, args.root)
+            break
+        # 如果碰到 .git，也认为到达了顶层
+        if os.path.exists(os.path.join(curr_dir, '.git')):
+            doc_root = os.path.join(curr_dir, args.root)
+            break
+        curr_dir = os.path.dirname(curr_dir)
+        
+    # 如果全遍历完都没找到，兜底使用最初的 cwd
+    if not doc_root:
+        doc_root = os.path.join(cwd, args.root)
 
     target_dir = ""
     filename = ""
