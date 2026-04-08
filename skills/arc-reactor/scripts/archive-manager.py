@@ -111,15 +111,20 @@ def main():
         mode = 'a'
         final_write_content = f"\n\n---\n## 增量知识点合入 ({now_str})\n\n" + content_to_write
         
-    # 自动探测并注入 Frontmatter 时间戳 (仅对新建的文件有效)
-    if mode == 'w' and final_write_content.strip().startswith('---'):
-        lines = final_write_content.strip().splitlines()
-        # 扫描前20行看有没有 date: 字段
-        has_date = any(line.lower().startswith('date:') for line in lines[:20])
-        if not has_date and len(lines) > 1:
-            # 在第一行 --- 下面插入 date
-            lines.insert(1, f"date: {now_date}")
-            final_write_content = "\n".join(lines)
+    # 自动探测并注入 Frontmatter 时间戳 (仅对新建的 Markdown 有效)
+    if mode == 'w' and args.type in ['source', 'entity', 'concept', 'raw']:
+        content_stripped = final_write_content.lstrip()
+        if content_stripped.startswith('---'):
+            lines = content_stripped.splitlines()
+            # 扫描前20行看有没有 date: 字段
+            has_date = any(line.lower().startswith('date:') for line in lines[:20])
+            if not has_date and len(lines) > 1:
+                # 在第一行 --- 下面插入 date
+                lines.insert(1, f"date: {now_date}")
+                final_write_content = "\n".join(lines)
+        else:
+            # 完全没有 YAML Frontmatter 格式，强制注入一个
+            final_write_content = f"---\ndate: {now_date}\n---\n\n" + content_stripped
 
     # 5. 原子落盘及防幻觉回执生成
     try:
@@ -137,6 +142,7 @@ def main():
             "path": target_path,
             "size_bytes": size_bytes,
             "checksum": checksum,
+            "date": now_date,
             "message": "Karpathy Wiki Layer write valid."
         }
         print(json.dumps(receipt, ensure_ascii=False))
