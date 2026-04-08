@@ -158,6 +158,8 @@ def main():
     parser.add_argument('--stdin', action='store_true', help='强制通过标准输入读取内容 (防止转义错误)')
     parser.add_argument('--root', default='arc-reactor-doc', help='文档根目录名称')
     parser.add_argument('--date', required=False, default=None, help='指定的日期戳，缺省为今日')
+    parser.add_argument('--dedup', choices=['merge', 'skip', 'overwrite'], default='overwrite',
+                        help='去重策略: merge=增量合并, skip=跳过, overwrite=覆盖(默认)')
 
     args = parser.parse_args()
 
@@ -173,6 +175,11 @@ def main():
     if not args.type:
         print(json.dumps({"status": "error", "message": "归档模式需要 --type 参数，或使用 --lint 进行健康检查"}))
         sys.exit(1)
+
+    # 0. 预计算常用值
+    topic_slug = slugify(args.topic)
+    now_date = datetime.now().strftime('%Y-%m-%d')
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     # 1. 验证必须使用 --stdin
     if not args.stdin:
@@ -190,14 +197,14 @@ def main():
 
     target_dir = ""
     filename = ""
-    topic_slug = slugify(args.topic)
+    # topic_slug already computed above
     
     # Wiki 层路由判定
     if args.type == 'raw':
         target_dir = os.path.join(doc_root, 'raw')
         filename = f"{topic_slug}.md"
     elif args.type == 'source':
-        date_dir = args.date if getattr(args, 'date', None) else datetime.now().strftime('%Y-%m-%d')
+        date_dir = args.date if args.date else now_date
         target_dir = os.path.join(doc_root, 'wiki', 'sources', date_dir)
         filename = f"{topic_slug}.md"
     elif args.type == 'entity':
@@ -227,8 +234,7 @@ def main():
     target_path = os.path.join(target_dir, filename)
     mode = 'w'
     final_write_content = content_to_write
-    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    now_date = datetime.now().strftime('%Y-%m-%d')
+    # now_str and now_date already computed above
 
     if args.type in ['index', 'log']:
         # index 和 log 永远是增量追加
@@ -258,6 +264,39 @@ def main():
             # 完全没有 YAML Frontmatter 格式，强制注入一个
             final_write_content = f"---\ndate: {now_date}\n---\n\n" + content_stripped
 
+    # 4.5 去重检查 (dedup check)
+    dedup_status = "new"
+    if os.path.exists(target_path) and args.dedup != 'overwrite':
+        existing_size = os.path.getsize(target_path)
+        if args.dedup == 'skip':
+            with open(target_path, 'rb') as ef:
+                existing_checksum = hashlib.sha256(ef.read()).hexdigest()
+            receipt = {
+                "status": "skipped",
+                "dedup": "skipped",
+                "type_routed": args.type,
+                "path": target_path,
+                "size_bytes": existing_size,
+                "checksum": existing_checksum,
+                "message": f"Entity already exists ({existing_size} bytes). Skipped per --dedup skip."
+            }
+            print(json.dumps(receipt, ensure_ascii=False))
+            sys.exit(0)
+        elif args.dedup == 'merge':
+            # For entity/concept: append (mode already set above)
+            # For source: refuse to merge, warn instead
+            if args.type == 'source':
+                receipt = {
+                    "status": "skipped",
+                    "dedup": "source_exists",
+                    "type_routed": args.type,
+                    "path": target_path,
+                    "message": f"Source already exists. Use --dedup overwrite to replace, or pick a different topic."
+                }
+                print(json.dumps(receipt, ensure_ascii=False))
+                sys.exit(0)
+            dedup_status = "merged"
+
     # 5. 原子落盘及防幻觉回执生成
     try:
         with open(target_path, mode, encoding='utf-8') as f:
@@ -270,6 +309,7 @@ def main():
             
         receipt = {
             "status": "success",
+            "dedup": dedup_status,
             "type_routed": args.type,
             "path": target_path,
             "size_bytes": size_bytes,
