@@ -4,6 +4,8 @@ import subprocess
 import argparse
 import re
 from pathlib import Path
+import urllib.request
+import urllib.parse
 
 # Try to import mlx_whisper. If it's missing, provide a clear error trace for the Agent.
 try:
@@ -12,6 +14,21 @@ except ImportError:
     print("[ERROR] mlx_whisper is not installed. Please run: pip3 install mlx-whisper yt-dlp")
     print("[提示] 并在运行时使用 `python3` 代替 `python`！")
     sys.exit(1)
+
+def resolve_short_url(url):
+    """抖音移动端分享短链 (v.douyin.com) 防爬虫非常强，因为它是动态跳转。
+    这里直接用纯原生模块做一次无痛探路，将其还原为电脑版全长视频 URL。"""
+    if 'v.douyin.com' in url:
+        print(f"[INFO] 监测到极强反爬防御的移动端段短链 v.douyin.com，正在执行底层光学穿透解码...")
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+            response = urllib.request.urlopen(req, timeout=5)
+            full_url = response.geturl()
+            print(f"[INFO] 短链剥离成功，获得真身：{full_url}")
+            return full_url
+        except Exception as e:
+            print(f"[WARNING] 短链解码遇到阻挠: {e}，将硬传给下载器。")
+    return url
 
 def extract_url_from_text(text):
     """
@@ -113,7 +130,8 @@ if __name__ == "__main__":
     output_md_path = os.path.join(base_dir, "final_transcript.md")
     
     # 步骤 1：全自动音频降维下载
-    clean_url = extract_url_from_text(args.url)
+    pure_url = extract_url_from_text(args.url)
+    clean_url = resolve_short_url(pure_url)
     audio_file = extract_audio(clean_url, base_dir)
     
     # 步骤 2：基于 M 系列芯片的快速离线解密
