@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--topic', required=False, default='knowledge-node', help='话题/实体名 (用于生成文件名)')
     parser.add_argument('--stdin', action='store_true', help='强制通过标准输入读取内容 (防止转义错误)')
     parser.add_argument('--root', default='arc-reactor-doc', help='文档根目录名称')
+    parser.add_argument('--date', required=False, default=None, help='指定的日期戳，缺省为今日')
 
     args = parser.parse_args()
 
@@ -66,7 +67,8 @@ def main():
         target_dir = os.path.join(doc_root, 'raw')
         filename = f"{topic_slug}.md"
     elif args.type == 'source':
-        target_dir = os.path.join(doc_root, 'wiki', 'sources', args.date)
+        date_dir = args.date if getattr(args, 'date', None) else datetime.now().strftime('%Y-%m-%d')
+        target_dir = os.path.join(doc_root, 'wiki', 'sources', date_dir)
         filename = f"{topic_slug}.md"
     elif args.type == 'entity':
         target_dir = os.path.join(doc_root, 'wiki', 'entities')
