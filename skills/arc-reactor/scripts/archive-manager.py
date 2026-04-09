@@ -829,6 +829,7 @@ def main():
     parser.add_argument('--date', required=False, default=None, help='指定的日期戳，缺省为今日')
     parser.add_argument('--dedup', choices=['merge', 'skip', 'overwrite'], default='overwrite',
                         help='去重策略: merge=增量合并, skip=跳过, overwrite=覆盖(默认)')
+    parser.add_argument('--url', help='直接从 URL 抓取正文内容 (支持智能反爬)')
 
     args = parser.parse_args()
 
@@ -889,14 +890,41 @@ def main():
     now_date = datetime.now().strftime('%Y-%m-%d')
     now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # 1. 验证必须使用 --stdin
-    if not args.stdin:
-        print(json.dumps({"status": "error", "message": "安全限制: 必须使用 --stdin 通过管道传参"}))
+    # 1. 获取内容 (来自 URL 或 STDIN)
+    content_to_write = ""
+    if args.url:
+        try:
+            # 动态导入 smart_fetcher 以避免常规 lint 报错
+            import smart_fetcher
+            print(json.dumps({"status": "processing", "message": f"正在尝试从 URL 摄入: {args.url}"}, ensure_ascii=False))
+            content_to_write = smart_fetcher.smart_extract(args.url)
+            if not content_to_write:
+                print(json.dumps({"status": "error", "message": "无法从该 URL 提取有效内容，抓取器返回为空"}))
+                sys.exit(1)
+        except ImportError:
+            # 如果没法直接 import（比如在不同目录），尝试 subprocess 调用
+            import subprocess
+            script_path = os.path.join(os.path.dirname(__file__), 'smart_fetcher.py')
+            result = subprocess.run([sys.executable, script_path, args.url], capture_output=True, text=True)
+            if result.returncode == 0:
+                # smart_fetcher.py 在 __main__ 下会打印内容，需要通过正则提取
+                full_out = result.stdout
+                match = re.search(r'--- EXTRACTED CONTENT START ---\n(.*?)\n--- EXTRACTED CONTENT END ---', full_out, re.DOTALL)
+                if match:
+                    content_to_write = match.group(1)
+                else:
+                    content_to_write = full_out # Fallback
+            else:
+                print(json.dumps({"status": "error", "message": "smart_fetcher 脚本执行失败", "details": result.stderr}))
+                sys.exit(1)
+    elif args.stdin:
+        content_to_write = sys.stdin.read()
+    else:
+        print(json.dumps({"status": "error", "message": "安全限制: 必须提供 --url 或使用 --stdin 通过管道传参"}))
         sys.exit(1)
 
-    content_to_write = sys.stdin.read()
-    if not content_to_write.strip():
-        print(json.dumps({"status": "error", "message": "写入内容为空"}))
+    if not content_to_write or not content_to_write.strip():
+        print(json.dumps({"status": "error", "message": "抓取或读取的内容为空"}))
         sys.exit(1)
 
     # 2. 确定物理路径
