@@ -146,3 +146,17 @@ python3 scripts/archive-manager.py \
 
 ---
 *Powered by ARC Factory V4.0.5 | Karpathy Wiki Arch*
+
+---
+
+## 🤝 多 Agent 协作规范
+
+本项目由多个 AI Agent 并行开发。Spawn Worker 写代码时必须遵守：
+
+1. **先查 Issue 再动手**：`gh issue list`
+2. **分支名加前缀**：`{agent-name}/{issue-number}-{描述}`
+3. **所有改动走 PR**：禁止直接 push main
+4. **Commit 标注作者**：`(by Codex)` / `(by Claude)` / `(by Worker)`
+5. **PR 合入前检查**：确认没丢已有功能
+
+详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
