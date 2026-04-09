@@ -14,12 +14,11 @@
 
 ### 1. Preparation
 Before starting a task:
-- Check for existing issues: `gh issue list`
 - Find or create a matching RT in `RT/index.yaml`.
 - Create a spec file: `RT/RT-xxx-description.md`.
 
 ### 2. Implementation
-- Use feature branches: `[agent]/[issue-number]-[desc]`
+- **Strict-Main Protocol**: Perform all work directly on the `main` branch to ensure all agents share the same global state.
 - Follow the architectural patterns established in `archive-manager.py`.
 - Keep the `SKILL.md` updated with any new capabilities.
 

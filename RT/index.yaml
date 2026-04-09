@@ -13,16 +13,28 @@ items:
     created_at: 2026-04-08T00:40:31
     closed_at: 2026-04-08T00:52:27Z
   - id: RT-002
-    title: arc-reactor
+    title: arc-v2-migration
     type: Enhancement
-    profile: Spec-Lite
+    profile: Spec-Full
     status: done
-    modules: 
-      - arc-reactor
+    modules:
+      - arc-reactor-core
     tool: Antigravity
     owner: evan
-    created_at: 2026-04-08T01:12:23
-    closed_at: 2026-04-08T01:38:44Z
+    created_at: 2026-04-08T09:00:00Z
+    closed_at: 2026-04-08T18:00:00Z
+
+  - id: RT-003
+    title: framework-stabilization
+    type: Documentation
+    profile: Spec-Lite
+    status: done
+    modules:
+      - arc-reactor-core
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-08T10:00:00Z
+    closed_at: 2026-04-08T20:00:00Z
   - id: RT-004
     title: archive-manager-implementation
     type: Feature
@@ -80,15 +92,16 @@ items:
     created_at: 2026-04-09T07:44:00Z
     closed_at: 2026-04-09T07:48:00Z
   - id: RT-009
-    title: conflict-collider
-    type: Feature
+    title: conflict-collider-mitigation
+    type: Bug
     profile: Spec-Full
-    status: proposed
+    status: done
     modules:
       - arc-reactor-core
     tool: Antigravity
     owner: evan
-    created_at: 2026-04-09T07:50:00Z
+    created_at: 2026-04-08T15:00:00Z
+    closed_at: 2026-04-09T20:00:00Z
 
   - id: RT-010
     title: output-layer-refinement
@@ -160,3 +173,16 @@ items:
     owner: evan
     created_at: 2026-04-09T20:40:00Z
     closed_at: 2026-04-09T20:41:00Z
+
+  - id: RT-015
+    title: stability-and-consistency-package
+    type: Bug
+    profile: Spec-Full
+    status: done
+    modules:
+      - aodw-governance
+      - arc-reactor-core
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-09T21:18:00Z
+    closed_at: 2026-04-09T21:23:00Z

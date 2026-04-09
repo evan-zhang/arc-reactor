@@ -1036,7 +1036,10 @@ def main():
     content_to_write = ""
     if args.url:
         try:
-            # 动态导入 smart_fetcher 以避免常规 lint 报错
+            # P5: Ensure scripts directory is in path for dynamic import
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            if script_dir not in sys.path:
+                sys.path.append(script_dir)
             import smart_fetcher
             print(json.dumps({"status": "processing", "message": f"正在尝试从 URL 摄入: {args.url}"}, ensure_ascii=False))
             content_to_write = smart_fetcher.smart_extract(args.url)
