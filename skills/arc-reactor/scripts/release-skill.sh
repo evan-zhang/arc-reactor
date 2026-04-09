@@ -31,23 +31,30 @@ mkdir -p "$DIST_DIR"
 PACKAGE_NAME="${NAME}-v${VERSION}.zip"
 TARGET_ZIP="$DIST_DIR/$PACKAGE_NAME"
 
-# 4. 执行打包 (排除不必要的文件)
+# 4. 执行打包 (精准排除)
 echo "📂 正在整理文件并压缩..."
 
 cd "$SKILL_ROOT"
 
-# 使用 zip 命令，利用 -x 排除干扰项
-# 我们打包的是整个文件夹的内容，但要把生成包的 dist 目录排除
+# 计算脚本相对于 SKILL_ROOT 的路径，以便精准排除
+REL_SCRIPT_PATH=$(python3 -c "import os; print(os.path.relpath('$SCRIPT_DIR/release-skill.sh', '$SKILL_ROOT'))")
+
+# 使用 zip 命令，精准排除
+# -x "*/__pycache__" 排除目录节点本身
+# -x "*/__pycache__/*" 排除目录下的所有文件
 zip -r "$TARGET_ZIP" . \
     -x "dist/*" \
-    -x "scripts/release-skill.sh" \
+    -x "$REL_SCRIPT_PATH" \
+    -x "*/__pycache__" \
     -x "*/__pycache__/*" \
     -x "*.pyc" \
     -x ".DS_Store" \
-    -x "*.obsidian/*" \
+    -x "*/.DS_Store" \
     -x "arc-reactor-doc/*" \
     -x ".git/*" \
-    -x ".cursor/*"
+    -x ".git" \
+    -x ".cursor/*" \
+    -x ".cursor"
 
 echo "------------------------------------------------"
 echo "✅ 打包成功！"
