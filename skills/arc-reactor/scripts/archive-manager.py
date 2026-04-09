@@ -43,7 +43,7 @@ def _extract_fact_status(text):
     if not normalized:
         return 'unknown'
 
-    if re.search(r'全部通过|通过率\s*100%|已完成|全部修复|现已全部修复|成功跑通|完成', normalized):
+    if re.search(r'全部通过|通过率\s*100%|已完成|全部修复|现已全部修复|成功跑通|(?<![未不])完成(?!度)', normalized):
         return 'completed'
     if re.search(r'申请|放行|审批', normalized):
         return 'requested'
@@ -104,7 +104,7 @@ def _normalize_fact_value(value):
 
 
 def _load_fact_index(index_path):
-    """读取事实索引文件，异常时回退为空列表。"""
+    """读取事实索引文件，异常时回退为空列表并记录警告。"""
     if not os.path.exists(index_path):
         return []
 
@@ -113,8 +113,10 @@ def _load_fact_index(index_path):
             data = json.load(file_obj)
         if isinstance(data, list):
             return data
-    except Exception:
-        return []
+    except json.JSONDecodeError as exc:
+        print(json.dumps({"status": "warning", "message": f"Fact index JSON corrupted at {index_path}: {exc}"}), file=sys.stderr)
+    except Exception as exc:
+        print(json.dumps({"status": "warning", "message": f"Unexpected error loading fact index {index_path}: {exc}"}), file=sys.stderr)
     return []
 
 
@@ -170,7 +172,7 @@ def parse_fact_index_entries(markdown_text):
         stable_id_seed = f"{title}|{date_value or ''}|{author}"
 
         entries.append({
-            'id': hashlib.sha256(stable_id_seed.encode('utf-8')).hexdigest()[:16],
+            'id': hashlib.sha256(stable_id_seed.encode('utf-8')).hexdigest()[:24],
             'type': _fact_type_from_label(type_label, title=title, summary=summary),
             'title': title,
             'author': author,
