@@ -52,3 +52,9 @@ injection:
   max_chars: 10000       # 注入上下文的最大字符长度限制
   match_index: "index.md"
 
+# 周报系统 (RT-008) 配置
+weekly_brief:
+  default_days: 7
+  summarizer_model: "claude-3-haiku" # 高性价比摘要模型
+
+
