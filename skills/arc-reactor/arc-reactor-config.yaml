@@ -57,4 +57,3 @@ weekly_brief:
   default_days: 7
   summarizer_model: "claude-3-haiku" # 高性价比摘要模型
 
-

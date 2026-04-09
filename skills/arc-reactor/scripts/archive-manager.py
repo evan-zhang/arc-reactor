@@ -622,6 +622,139 @@ def slugify(text):
     return text if text else "untitled"
 
 WIKI_LINK_RE = re.compile(r'\[\[([^\]]+)\]\]')
+FRONTMATTER_RE = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
+
+
+def resolve_entity_path(doc_root, topic):
+    """在 entities 或 concepts 目录中寻找实体的物理路径。"""
+    slug = slugify(topic)
+    paths = [
+        os.path.join(doc_root, 'wiki', 'entities', f"{slug}.md"),
+        os.path.join(doc_root, 'wiki', 'concepts', f"{slug}.md")
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def find_backlinks(doc_root, topic):
+    """使用 grep 扫描 wiki/sources 目录，寻找引用了该实体的源文件。"""
+    sources_dir = os.path.join(doc_root, 'wiki', 'sources')
+    if not os.path.exists(sources_dir):
+        return []
+
+    import subprocess
+    # 搜索格式为 [[Topic]] 或 [[topic]]
+    pattern = f"\\[\\[{topic}\\]\\]"
+    # 使用 grep -rl 获取包含该字符串的文件名列表
+    try:
+        cmd = ["grep", "-rl", "--include=*.md", pattern, sources_dir]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        pass
+    return []
+
+
+def export_entity(doc_root, topic, output_dir=None):
+    """导出实体及其关联上下文为单一 Markdown 文档。"""
+    entity_path = resolve_entity_path(doc_root, topic)
+    if not entity_path:
+        return {"status": "error", "message": f"未找到实体: {topic}"}
+
+    wiki_dir = os.path.join(doc_root, 'wiki')
+    if not output_dir:
+        output_dir = os.path.join(doc_root, 'exports')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 1. 读取实体内容
+    with open(entity_path, 'r', encoding='utf-8') as f:
+        entity_content = f.read()
+
+    # 2. 发现关联素材 (Sources)
+    # A. 从 Frontmatter 读取
+    linked_sources = []
+    fm_match = FRONTMATTER_RE.match(entity_content)
+    if fm_match:
+        fm_text = fm_match.group(1)
+        # 简单解析 YAML 列表
+        sources_match = re.search(r'sources:\s*\[(.*?)\]', fm_text)
+        if sources_match:
+            raw_sources = sources_match.group(1)
+            # 这里的路径通常是相对路径或 Slug
+            linked_sources = [s.strip().strip('"').strip("'") for s in raw_sources.split(',')]
+
+    # B. 发现反向链接
+    backlinks = find_backlinks(doc_root, topic)
+
+    # 3. 发现关联实体 (Related Entities)
+    related_entities = WIKI_LINK_RE.findall(entity_content)
+    unique_related = list(set(slugify(e) for e in related_entities if slugify(e) != slugify(topic)))
+
+    # 4. 构建导出文档
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    lines = [
+        f"# {topic} — Knowledge Export",
+        f"**Generated**: {now_str} | **Source**: ARC Reactor Wiki",
+        "\n---",
+        "\n## 1. Overview (Entity Content)",
+        entity_content,
+        "\n---",
+        "\n## 2. Connections (Related Entities)"
+    ]
+
+    if not unique_related:
+        lines.append("\n*No direct wiki-entity connections found.*")
+    else:
+        for r_slug in unique_related:
+            r_path = resolve_entity_path(doc_root, r_slug)
+            if r_path:
+                with open(r_path, 'r', encoding='utf-8') as f:
+                    r_content = f.read()
+                lines.append(f"\n### [[{r_slug}]]")
+                lines.append(r_content)
+
+    lines.append("\n---")
+    lines.append("\n## 3. Origins (Source Materials)")
+
+    all_source_paths = set()
+    # 尝试解析 Frontmatter 里的 source 路径
+    for s_ref in linked_sources:
+        # 这里逻辑较简化，尝试在 wiki/sources 递归寻找对应文件
+        for root, _, files in os.walk(os.path.join(wiki_dir, 'sources')):
+            for filename in files:
+                if s_ref in filename or slugify(s_ref) in filename:
+                    all_source_paths.add(os.path.join(root, filename))
+
+    # 添加反向链接命中的路径
+    for b_path in backlinks:
+        all_source_paths.add(b_path)
+
+    if not all_source_paths:
+        lines.append("\n*No original source materials found.*")
+    else:
+        for s_path in all_source_paths:
+            rel_name = os.path.relpath(s_path, os.path.join(wiki_dir, 'sources'))
+            with open(s_path, 'r', encoding='utf-8') as f:
+                s_content = f.read()
+            lines.append(f"\n### Source: {rel_name}")
+            lines.append(s_content)
+
+    # 5. 写入文件
+    dest_path = os.path.join(output_dir, f"{slugify(topic)}-bundle.md")
+    with open(dest_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+
+    return {
+        "status": "success",
+        "action": "export_entity",
+        "topic": topic,
+        "path": dest_path,
+        "connections_found": len(unique_related),
+        "sources_found": len(all_source_paths)
+    }
 
 def find_doc_root(start_path, root_name='arc-reactor-doc'):
     """Walk up from start_path to find the workspace root."""
@@ -811,6 +944,7 @@ def main():
     parser.add_argument('--kb-init', action='store_true', help='初始化新的知识库实例')
     parser.add_argument('--kb-list', action='store_true', help='列出所有已配置知识库')
     parser.add_argument('--query-facts', action='store_true', help='查询事实索引')
+    parser.add_argument('--export-entity', help='导出实体及其关联上下文')
     parser.add_argument('--type', choices=[
         'raw', 'source', 'entity', 'concept', 'index', 'log', 'template', 'fact-index'
     ], required=False, help='归档进入的 Wiki 圈层类型')
@@ -830,6 +964,7 @@ def main():
     parser.add_argument('--dedup', choices=['merge', 'skip', 'overwrite'], default='overwrite',
                         help='去重策略: merge=增量合并, skip=跳过, overwrite=覆盖(默认)')
     parser.add_argument('--url', help='直接从 URL 抓取正文内容 (支持智能反爬)')
+    parser.add_argument('--output-dir', help='导出目标目录')
 
     args = parser.parse_args()
 
@@ -864,6 +999,13 @@ def main():
 
     if args.kb_init:
         result = kb_init(args.root, name=args.name, description=args.description)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
+
+    if args.export_entity:
+        cwd = os.getcwd()
+        doc_root = find_doc_root(cwd, args.root)
+        result = export_entity(doc_root, args.export_entity, output_dir=args.output_dir)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0)
 
@@ -991,19 +1133,19 @@ def main():
         final_write_content = f"\n\n---\n## 增量知识点合入 ({now_str})\n\n" + content_to_write
         
     # 自动探测并注入 Frontmatter 时间戳 (仅对新建的 Markdown 有效)
-    if mode == 'w' and args.type in ['source', 'entity', 'concept', 'raw']:
-        content_stripped = final_write_content.lstrip()
-        if content_stripped.startswith('---'):
-            lines = content_stripped.splitlines()
-            # 扫描前20行看有没有 date: 字段
-            has_date = any(line.lower().startswith('date:') for line in lines[:20])
-            if not has_date and len(lines) > 1:
-                # 在第一行 --- 下面插入 date
-                lines.insert(1, f"date: {now_date}")
-                final_write_content = "\n".join(lines)
+    if mode == 'w' and args.type in ['source', 'entity', 'concept', 'raw', 'fact-index']:
+        # 使用正则表达式匹配 Frontmatter 块
+        fm_match = FRONTMATTER_RE.match(final_write_content.lstrip())
+        if fm_match:
+            fm_text = fm_match.group(1)
+            # 检查内部是否已有 date 字段
+            if not re.search(r'^date:', fm_text, re.MULTILINE | re.IGNORECASE):
+                # 在第一个 --- 下方插入 date
+                insertion = f"---\ndate: {now_date}\n"
+                final_write_content = re.sub(r'^---\s*\n', insertion, final_write_content.lstrip(), count=1)
         else:
             # 完全没有 YAML Frontmatter 格式，强制注入一个
-            final_write_content = f"---\ndate: {now_date}\n---\n\n" + content_stripped
+            final_write_content = f"---\ndate: {now_date}\n---\n\n" + final_write_content.lstrip()
 
     # 4.5 去重检查 (dedup check)
     dedup_status = "new"

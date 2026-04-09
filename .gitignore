@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+arc-reactor-doc/
+cwork-kb/
+skills/arc-reactor/dist/
