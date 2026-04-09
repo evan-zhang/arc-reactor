@@ -29,3 +29,25 @@ workflows:
   lint:
     required_combo: [index, log, metadata_fix]
     preferred_model: "lint_light"
+
+knowledge_bases:
+  - name: personal-learning
+    root: arc-reactor-doc
+    description: "External research, papers, open-source analysis"
+    auto_route:
+      sources: ["web_fetch", "web_search", "youtube", "manual"]
+      tags: ["research", "paper", "open-source", "tutorial", "agent", "ai"]
+  
+  - name: work-collaboration
+    root: cwork-kb
+    description: "CWork inbox/outbox, contracts, HR decisions, project progress"
+    auto_route:
+      sources: ["cwork-api", "cwork-query-report", "cwork-send-report"]
+      tags: ["合同", "汇报", "人事", "审批", "待办", "任务"]
+
+  - name: 测试知识库
+    root: test-kb
+    description: "验证kb-init功能"
+    auto_route:
+      sources: []
+      tags: []
