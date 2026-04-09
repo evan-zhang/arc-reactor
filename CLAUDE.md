@@ -4,7 +4,7 @@
 
 ## 开始工作前必读
 
-详见 [CONTRIBUTING.md](./skills/arc-reactor/CONTRIBUTING.md)
+详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## 核心规则（5 条）
 
