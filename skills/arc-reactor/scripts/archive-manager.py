@@ -638,6 +638,81 @@ def resolve_entity_path(doc_root, topic):
     return None
 
 
+def _count_link_mentions_in_sources(sources_dir, link_text):
+    """统计 wiki/sources/ 目录中提及指定 link 文本的 .md 文件数量。
+
+    使用 grep -rl 扫描，返回命中文件数（非行数），用于判断该 link 是否值得保留。
+    """
+    import subprocess
+    if not os.path.exists(sources_dir):
+        return 0
+    pattern = re.escape(link_text)
+    try:
+        cmd = ["grep", "-rl", "--include=*.md", pattern, sources_dir]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            return len([l for l in result.stdout.splitlines() if l.strip()])
+    except Exception:
+        pass
+    return 0
+
+
+def sanitize_wiki_links(content, doc_root, existing_content=None):
+    """扫描并清理孤儿 wiki-link，防止产生大量指向不存在页面的 [[link]]。
+
+    处理逻辑：
+    1. 提取所有 [[wiki-link]]
+    2. 检查 wiki/entities/{slug}.md 和 wiki/concepts/{slug}.md 是否存在
+    3. 若目标不存在，统计 wiki/sources/ 中被提及的文件数：
+       - >= 3 次：保留 [[link]]（值得建页）
+       - 2 次：降级为 **link**（加粗）
+       - 1 或 0 次：降级为纯文本（去掉 [[]]）
+    4. 如果传入了 existing_content，只对新增部分做清理，不动已有内容。
+    """
+    # 若为追加模式（append），分离已有内容与新增内容，只清理新增部分
+    if existing_content:
+        # 用最长公共前缀定位新增内容的起点
+        common_len = 0
+        min_len = min(len(existing_content), len(content))
+        for i in range(min_len):
+            if existing_content[i] == content[i]:
+                common_len += 1
+            else:
+                break
+        prefix = content[:common_len]
+        suffix = content[common_len:]
+        # 只对新增后缀做 sanitization
+        sanitized_suffix = sanitize_wiki_links(suffix, doc_root, existing_content=None)
+        return prefix + sanitized_suffix
+
+    sources_dir = os.path.join(doc_root, 'wiki', 'sources')
+
+    def _replacer(match):
+        link_text = match.group(1)
+        slug = slugify(link_text)
+        # 检查目标实体/概念文件是否存在
+        entity_path = os.path.join(doc_root, 'wiki', 'entities', f"{slug}.md")
+        concept_path = os.path.join(doc_root, 'wiki', 'concepts', f"{slug}.md")
+        if os.path.exists(entity_path) or os.path.exists(concept_path):
+            # 目标页面已存在，保留 wiki-link
+            return match.group(0)
+
+        # 目标不存在，统计在 sources 中的提及次数
+        mention_count = _count_link_mentions_in_sources(sources_dir, link_text)
+
+        if mention_count >= 3:
+            # 高频提及，保留 wiki-link（未来值得建页）
+            return match.group(0)
+        elif mention_count == 2:
+            # 中频提及，降级为加粗
+            return f"**{link_text}**"
+        else:
+            # 低频提及（1 或 0），降级为纯文本
+            return link_text
+
+    return WIKI_LINK_RE.sub(_replacer, content)
+
+
 def find_backlinks(doc_root, topic):
     """使用 grep 扫描 wiki/sources 目录，寻找引用了该实体的源文件。"""
     sources_dir = os.path.join(doc_root, 'wiki', 'sources')
@@ -1182,6 +1257,21 @@ def main():
                 print(json.dumps(receipt, ensure_ascii=False))
                 sys.exit(0)
             dedup_status = "merged"
+
+    # 4.6 Link sanitization — 仅对 entity/concept 写入生效，防止孤儿 wiki-link
+    if args.type in ['entity', 'concept']:
+        existing_content_for_sanitize = None
+        if mode == 'a' and os.path.exists(target_path):
+            # 追加模式：读取已有内容，只清理新增部分
+            try:
+                with open(target_path, 'r', encoding='utf-8') as ef:
+                    existing_content_for_sanitize = ef.read()
+            except Exception:
+                pass
+        final_write_content = sanitize_wiki_links(
+            final_write_content, doc_root,
+            existing_content=existing_content_for_sanitize
+        )
 
     # 5. 原子落盘及防幻觉回执生成
     try:
