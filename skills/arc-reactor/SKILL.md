@@ -176,4 +176,16 @@ python3 scripts/archive-manager.py \
 4. **Commit 标注作者**：`(by Codex)` / `(by Claude)` / `(by Worker)`
 5. **PR 合入前检查**：确认没丢已有功能
 
+---
+
+## 📦 Release Workflow (发布流)
+
+为了保证 Skill 的独立性与分发质量，所有的发布必须使用自动化脚本打包：
+
+1. **更新版本**: 在 `_meta.json` 中增加版本号。
+2. **执行打包**: 运行 `bash scripts/release-skill.sh`。
+3. **分发**: 脚本会在 `dist/` 下生成 ZIP 包。将其上传至 GitHub Releases。
+
+---
+
 详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
