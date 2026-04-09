@@ -1,157 +1,73 @@
-# ARC Reactor v4.1 — AI Agent 知识编译引擎
+# ARC Reactor v4.2 — AI Agent 知识编译引擎 (Subconscious Edition)
 
 [![OpenClaw](https://img.shields.io/badge/Ecosystem-OpenClaw-blue.svg)](https://openclaw.ai)
-[![Version](https://img.shields.io/badge/Version-4.1.0-green.svg)](#)
+[![Version](https://img.shields.io/badge/Version-4.2.0-green.svg)](#)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
 
 > ARC = **Acquire** (获取) → **Research** (研究) → **Catalogue** (编目)
 
-ARC Reactor 把任何信息源（文章、视频、工作汇报）编译成结构化的个人知识库。基于 Karpathy 风格的 Wiki 架构，支持多知识库实例、事实索引、Obsidian 同步。
+ARC Reactor 把任何信息源（文章、视频、工作汇报）编译成结构化的个人知识库。基于 Karpathy 风格的 Wiki 架构，支持多知识库实例、潜意识注入、自动化周报。
 
 ---
 
-## ✨ 核心能力
+## ✨ 核心能力 (v4.2.0 新特性)
 
 | 能力 | 说明 |
 |------|------|
-| 📥 **Ingest** | 给一个链接 → 自动提取 → 生成 Source + Entity + Index + Log |
-| 🔍 **Query** | 从知识库中语义检索，回答你的问题 |
-| 🩺 **Lint** | 健康检查：断链、格式、缺失字段 |
-| 📚 **多知识库** | 个人学习、工作协同、项目知识——天然隔离 |
-| 📊 **事实索引** | 结构化 JSON 索引，按人/项目/金额/类型精准查询 |
-| 📱 **Obsidian 同步** | 自动同步到你的 Obsidian 仓库 |
+| 🧠 **Subconscious Injection** | **[NEW]** 潜意识注入。Agent 在回答前自动检索 Wiki 命中词条，实现“无感”知识增强。 |
+| 📅 **Weekly Executive Brief** | **[NEW]** 自动化周报。一键聚合过去 7 天的摄入内容，通过 AI 生成深度横向洞察。 |
+| 📥 **Wiki Ingest** | 给一个链接 → 自动提取 → 生成 Source + Entity + Index + Log (4连击模式) |
+| 🩺 **Wiki Lint** | 自动健康检查：修复孤岛词条、断开的 `[[wiki-links]]`。 |
+| 📚 **多知识库隔离** | 个人学习、工作协同、项目知识——在配置中一键切换。 |
 
 ---
 
-## 📦 安装
+## 📂 项目结构 (Monorepo)
 
+本项目采用 Monorepo 结构，将“研发管理”与“技能分发”严格隔离：
+- **`RT/`**: 研发追踪、设计决策与版本档案。
+- **`skills/arc-reactor/`**: **[正式发布目录]** 包含 Agent 运行所需的所有脚本、指令与配置。
+
+---
+
+## 📦 安装与挂载
+
+### 1. 克隆代码仓库
 ```bash
-# 1. 下载最新 Release
-curl -L https://github.com/evan-zhang/arc-reactor/releases/download/v4.1.0/arc-reactor-v4.1.0.tar.gz | tar -xz
+git clone https://github.com/evan-zhang/arc-reactor.git
+```
 
-# 2. 放到 OpenClaw skills 目录
-mv arc-reactor ~/.openclaw/skills/
+### 2. 在 OpenClaw 中配置
+将技能目录指向子路径：`./arc-reactor/skills/arc-reactor`。
 
-# 3. 验证安装
-python3 ~/.openclaw/skills/arc-reactor/scripts/archive-manager.py --help
+### 3. 验证安装
+```bash
+cd arc-reactor/skills/arc-reactor
+python3 scripts/archive-manager.py --help
 ```
 
 ---
 
-## 🎯 使用案例
+## 🎯 新功能实战
 
-### Case 1：存一篇技术文章
+### Case 1：潜意识注入 (无感增强)
+**现状**：你的库里已有 `[[OpenClaw]]` 的卡片。
+**输入**：你直接问：“OpenClaw 怎么部署？”
+**效果**：Agent 会在内部静默调用 `context-injector.py`，它会发现“OpenClaw”是已知实体，自动把卡片内容贴在它的思维前方。Agent 还没开口，就已经记住了你的私域知识。
 
-**你说：**
-> 帮我存一下这篇文章 https://karpathy.github.io/2024/01/03/chatgpt-is-blazing/
-
-**AI 做什么：**
-1. 抓取文章内容
-2. 编译成 Source（原始资料）
-3. 提取 Entity（关键概念：ChatGPT、RLHF、RLGA）
-4. 更新 Index（知识索引）
-5. 回复你："✅ 已入库，提取了 3 个核心概念"
-
-**之后你可以问：**
-> ChatGPT 的训练方法有什么创新？
-
-**AI 从知识库里直接回答，不是从网上现搜。**
+### Case 2：自动化周报 (深度聚合)
+**输入**：“生成本周的知识周报。”
+**效果**：Agent 运行 `weekly-reporter.py --days 7`。它会扫描过去 7 天所有 `wiki/sources/` 下的文件，告诉你这周主要研究了什么，并提炼出下周的关注建议。
 
 ---
 
-### Case 2：建一个工作知识库
+## 🏗️ 开发者指南 (AODW 规范)
 
-**你说：**
-> 帮我新建一个知识库，存工作协同的汇报数据
-
-**AI 做什么：**
-1. `--kb-init --root cwork-kb --name "工作协同"` 创建独立知识库
-2. 跟个人学习库完全隔离
-3. 之后拉工作汇报自动归到这个库
+本项目严格遵守 **AODW-Next** 工程规范：
+- 所有开发任务必须通过 `RT (Release Tracker)` 追踪。
+- 修改代码前，请先查阅 `RT/index.yaml` 确认当前任务状态。
+- 设计决策请见 `RT/RT-XXX/spec-full.md`。
 
 ---
 
-### Case 3：查项目进展
-
-**你说：**
-> SFE 项目现在进展怎么样？有什么困难？
-
-**AI 做什么：**
-1. 查事实索引：`--query-facts --filter "project=SFE系统"`
-2. 找到相关汇报（验收公示、奖金申请）
-3. 综合回答："SFE 两项子项目验收通过，评分 5/5，奖金 1 万元待审批。注意德镁试点日反馈只有 16 条，活跃度可能需要关注。"
-
-**不用翻 367 条未读汇报，一句话出答案。**
-
----
-
-### Case 4：查某个同事在做什么
-
-**你说：**
-> 屈军利最近在忙什么？
-
-**AI 做什么：**
-1. 事实索引过滤：`--query-facts --filter "author=屈军利"`
-2. 列出他最近的所有汇报和任务
-3. 回复："最近主要在推 Skill 闭环测试（已通过）、AI 成本日报（自动运行）、GitHub 组织管理流程"
-
----
-
-### Case 5：健康检查
-
-**你说：**
-> 帮我检查一下知识库有没有问题
-
-**AI 做什么：**
-```
-python3 archive-manager.py --lint --root arc-reactor-doc
-```
-输出：58 个文件、41 个实体、115 条链接、197 个待修复问题
-
----
-
-## 🏗️ 架构
-
-```
-信息源（URL / 文件 / API）
-        ↓
-   ┌────────────┐
-   │  Ingest    │  4 次操作：Source → Entity → Index → Log
-   └─────┬──────┘
-         ↓
-   ┌────────────┐
-   │  Wiki 知识库 │  多实例隔离
-   └─────┬──────┘
-         ↓
-   ┌────────────┐
-   │  Query     │  事实索引 / 实体检索 / 跨库搜索
-   └────────────┘
-```
-
----
-
-## 📂 目录结构
-
-```
-arc-reactor/
-├── scripts/
-│   └── archive-manager.py    # 核心归档引擎（959行）
-├── references/
-│   ├── spawn-template.md     # Worker spawn 模板
-│   ├── output-style.md       # 输出样式规范
-│   └── dedup-rules.md        # 去重规则
-├── arc-reactor-config.yaml   # 路由配置
-├── SKILL.md                  # Agent 主控协议
-├── CLAUDE.md                 # AI 协作规范
-└── CONTRIBUTING.md           # 多 Agent 协作指南
-```
-
----
-
-## 🤝 多 Agent 协作
-
-本项目支持多个 AI Agent 并行开发，详见 [CONTRIBUTING.md](./CONTRIBUTING.md) 和 [CLAUDE.md](./CLAUDE.md)。
-
----
-
-*Created by [Evan Zhang](https://github.com/evan-zhang) | ARC Reactor v4.1.0*
+*Created by [Evan Zhang](https://github.com/evan-zhang) | ARC Reactor v4.2.0*
