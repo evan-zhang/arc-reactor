@@ -37,7 +37,9 @@ def _parse_simple_yaml(filepath):
             for line in f:
                 if ':' in line and not line.strip().startswith('#'):
                     key, val = line.split(':', 1)
-                    config[key.strip()] = val.strip().strip('"').strip("'")
+                    # 剥离行内注释
+                    val = val.split('#', 1)[0].strip()
+                    config[key.strip()] = val.strip('"').strip("'")
     except:
         pass
     return config
