@@ -11,7 +11,10 @@
 所有的知识落地必须且只能通过系统的 `archive-manager.py --stdin` 脚本落盘，落脚点为当前 Agent 根目录下的 `arc-reactor-doc/`。
 
 ### 1. Ingest 工作流 (摄入生肉，编译 Wiki)
-**触发**：当 Orchestrator 丢给你一篇素材或网址要求调研时。
+**触发**（满足任一即触发）：
+- Orchestrator 主动指派素材/网址调研
+- 用户发送任意 URL / 链接（YouTube、文章、论文、播客）→ **自动触发 Ingest + Display**
+- 用户说"搜一下"、"帮我看"、"这个讲了什么"、"读一下"、"看看这个" → **自动触发 Ingest + Display**
 **抓取模式选择**：
    - **传统模式**: 如果是本地文件素材，使用 `--stdin` 配合管道。
    - **智能模式 (针对 URL)**: 如果是外部网址（尤其是今日头条、掘金、微信），**强烈建议**直接使用 `--url [URL]`。脚本会自动识别域名并路由至最佳抓取节点。
@@ -75,7 +78,8 @@ EOF_ARC_DOC
 ```
 
 ## 🔒 铁律 (The Iron Rules)
-1. **禁止绕出管道且禁止变更目录 (NO CD)**: 永远使用 `--stdin`，且你**必须在你当前的默认工作目录**执行绝对路径或相对路径脚本调用，**严禁先 `cd` 进 skill 目录再执行**！
+1. **禁止 Orchestrator 自己执行 Ingest**: 收到素材后，**必须 spawn sub agent** 执行 Ingest 4 连击，主会话只负责 Display Layer 展示 + 判断力输出 + 与用户持续沟通。Orchestrator 自己跑采集（下载音频、whisper 转录等）视为"阻塞主会话"，**严重违反架构设计**。
+2. **禁止绕出管道且禁止变更目录 (NO CD)**: 永远使用 `--stdin`，且你**必须在你当前的默认工作目录**执行绝对路径或相对路径脚本调用，**严禁先 `cd` 进 skill 目录再执行**！
 2. **凭证核实防幻觉**: 必须校验脚本输出的 JSON 中含有 `"status": "success"`。如果不带有回执且包含 checksum，这说明此任务失败了。
 3. **输出解耦 (Two-Tier Output)**: 你**严禁**直接将 `archive-manager.py` 的 JSON 回执完整吐给用户（除非操作失败）。你必须将其转化为 **Display Layer**。成功的回执应当静默存储在 Archive 层。
 4. **注入优先 (Injection Awareness)**: 开启 `injection:enabled: true` 时，你必须在回答前检查是否有 `<ARC_KNOWLEDGE_CONTEXT>`。如果有，你必须优先引用其中的知识。
@@ -169,6 +173,8 @@ python3 scripts/archive-manager.py \
 现有 Ingest/Query/Lint 保留，但对用户透明。用户可以说：
 
 - "搜一下"、"帮我看"、"这个讲了什么" → 自动触发 Ingest + Display
+- 用户发送任意链接（URL）→ 自动触发 Ingest + Display
+- "读一下"、"看看这个" → 自动触发 Ingest + Display
 - "详细说说"、"展开" → 触发 Archive 层
 
 ---
