@@ -5,9 +5,10 @@
 
 ## 🏛️ The Constitution (Core Principles)
 
-1. **Traceability First**: No code change without a Requirement Traceability (RT) entry. Any modification must link back to an RT in the `RT/` directory.
-2. **Tool Sovereignty**: Use `archive-manager.py` for all Wiki / Knowledge operations. Never edit knowledge base files manually.
-3. **Attribution**: Every commit must explicitly state which Agent performed the action.
+1. **Traceability First**: No code change without a Requirement Traceability (RT) entry.
+2. **Atomic Main Commits**: We use a **Strict-Main (Trunk-Based)** protocol to ensure all Agents share the same global state. No feature branches are allowed for AI agents unless specifically requested.
+3. **Commit Guard**: You **MUST** run `python3 skills/arc-reactor/scripts/governance-audit.py` before every commit. If it fails, do not commit.
+4. **Tool Sovereignty**: Use `archive-manager.py` for all Wiki / Knowledge operations.
 
 ## 🛠️ Development Workflow
 

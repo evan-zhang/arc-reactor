@@ -136,3 +136,27 @@ items:
     owner: evan
     created_at: 2026-04-09T20:27:00Z
     closed_at: 2026-04-09T20:28:00Z
+
+  - id: RT-014
+    title: governance-audit-tool
+    type: Feature
+    profile: Spec-Lite
+    status: done
+    modules:
+      - aodw-governance
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-09T20:40:00Z
+    closed_at: 2026-04-09T20:41:00Z
+
+  - id: RT-027
+    title: fact-index-verification
+    type: Documentation
+    profile: Spec-Lite
+    status: done
+    modules:
+      - arc-reactor-core
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-09T20:40:00Z
+    closed_at: 2026-04-09T20:41:00Z
