@@ -60,10 +60,12 @@ items:
     title: dynamic-context-injector
     type: Feature
     profile: Spec-Full
-    status: in-progress
+    status: done
     modules:
       - arc-reactor-core
       - openclaw-integration
     tool: Antigravity
     owner: evan
     created_at: 2026-04-08T14:12:00Z
+    closed_at: 2026-04-09T07:44:00Z
+

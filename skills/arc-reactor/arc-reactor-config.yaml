@@ -44,3 +44,11 @@ knowledge_bases:
     auto_route:
       sources: ["cwork-api", "cwork-query-report", "cwork-send-report"]
       tags: ["合同", "汇报", "人事", "审批", "待办", "任务"]
+
+# 潜意识注入 (RT-007) 配置
+injection:
+  enabled: true
+  max_entities: 3        # 单次命中最大调取的实体数量
+  max_chars: 10000       # 注入上下文的最大字符长度限制
+  match_index: "index.md"
+
