@@ -4,6 +4,8 @@ import sys
 import argparse
 import json
 import hashlib
+import shutil
+import time
 from datetime import datetime
 import re
 
@@ -751,6 +753,57 @@ def lint_wiki(doc_root, fix=False):
         "fixed": fixed
     }
 
+
+def validate_obsidian_config(vault_path):
+    """Validate Obsidian vault configuration."""
+    vault = os.path.expanduser(vault_path)
+    if not os.path.isdir(vault):
+        return False, "Obsidian 库路径不存在"
+    test_path = os.path.join(vault, '.arc-sync-test')
+    try:
+        with open(test_path, 'w') as f:
+            f.write('ping')
+        os.remove(test_path)
+        return True, "OK"
+    except Exception as e:
+        return False, f"无写入权限: {str(e)}"
+
+
+def sync_to_obsidian(source_path, vault_path, target_dir, max_retries=3, retry_delay=300):
+    """Sync a source file to Obsidian vault with exponential backoff."""
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now_date = datetime.now().strftime('%Y-%m-%d')
+    
+    is_valid, msg = validate_obsidian_config(vault_path)
+    if not is_valid:
+        return {"status": "error", "action": "obsidian_sync", "source": source_path, "error": msg, "retry_count": 0, "message": f"Obsidian sync failed: {msg}"}
+    
+    if not os.path.exists(source_path):
+        return {"status": "error", "action": "obsidian_sync", "source": source_path, "error": "源文件不存在", "retry_count": 0, "message": "Obsidian sync failed: source file not found"}
+    
+    resolved_target = target_dir.replace('{date}', now_date)
+    dest_dir = os.path.join(os.path.expanduser(vault_path), resolved_target)
+    filename = os.path.basename(source_path)
+    dest_path = os.path.join(dest_dir, filename)
+    
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            os.makedirs(dest_dir, exist_ok=True)
+            shutil.copy2(source_path, dest_path)
+            sync_marker = f"\n\n---\n同步状态: ✅ Obsidian (时间: {now_str})\n---\n"
+            with open(dest_path, 'a', encoding='utf-8') as f:
+                f.write(sync_marker)
+            return {"status": "success", "action": "obsidian_sync", "source": source_path, "destination": dest_path, "obsidian_vault": vault_path, "sync_time": now_str, "retry_count": attempt, "message": "Obsidian sync complete."}
+        except Exception as e:
+            last_error = str(e)
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay * (2 ** attempt))
+            continue
+    
+    return {"status": "error", "action": "obsidian_sync", "source": source_path, "error": last_error, "retry_count": max_retries, "message": f"Obsidian sync failed after {max_retries} retries: {last_error}"}
+
+
 def main():
     parser = argparse.ArgumentParser(description='ARC Reactor V4 Archive Manager (Karpathy Wiki Edition)')
     parser.add_argument('--lint', action='store_true', help='Run Wiki health check')
@@ -761,6 +814,11 @@ def main():
     parser.add_argument('--type', choices=[
         'raw', 'source', 'entity', 'concept', 'index', 'log', 'template', 'fact-index'
     ], required=False, help='归档进入的 Wiki 圈层类型')
+    parser.add_argument('--sync-obsidian', action='store_true', help='Sync source file to Obsidian vault')
+    parser.add_argument('--source', required=False, default=None, help='Source file path (used with --sync-obsidian)')
+    parser.add_argument('--vault', required=False, default=None, help='Obsidian vault path (used with --sync-obsidian)')
+    parser.add_argument('--target', required=False, default='github分享/AI调研/{date}/', help='Target subdirectory in vault')
+    parser.add_argument('--async', dest='async_mode', action='store_true', help='Async mode: return immediately, sync in background')
     
     parser.add_argument('--topic', required=False, default='knowledge-node', help='话题/实体名 (用于生成文件名)')
     parser.add_argument('--stdin', action='store_true', help='强制通过标准输入读取内容 (防止转义错误)')
@@ -773,6 +831,30 @@ def main():
                         help='去重策略: merge=增量合并, skip=跳过, overwrite=覆盖(默认)')
 
     args = parser.parse_args()
+
+    # Obsidian sync mode
+    if args.sync_obsidian:
+        auto_sync = os.environ.get('AUTO_SYNC', 'true')
+        if auto_sync.lower() in ('false', '0', 'no'):
+            print(json.dumps({"status": "skipped", "action": "obsidian_sync", "reason": "AUTO_SYNC=false", "message": "Obsidian sync disabled via AUTO_SYNC=false"}, ensure_ascii=False))
+            sys.exit(0)
+        if not args.source:
+            print(json.dumps({"status": "error", "message": "--sync-obsidian requires --source"}))
+            sys.exit(1)
+        vault_path = args.vault or os.environ.get('OBSIDIAN_VAULT_PATH', '')
+        if not vault_path:
+            print(json.dumps({"status": "error", "message": "OBSIDIAN_VAULT_PATH not configured"}))
+            sys.exit(1)
+        if getattr(args, 'async_mode', False):
+            import subprocess
+            sync_cmd = [sys.executable, os.path.abspath(__file__), '--sync-obsidian', '--source', args.source, '--vault', vault_path, '--target', args.target]
+            subprocess.Popen(sync_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            print(json.dumps({"status": "pending", "action": "obsidian_sync", "source": args.source, "message": "Obsidian sync started in background."}, ensure_ascii=False))
+            sys.exit(0)
+        else:
+            result = sync_to_obsidian(args.source, vault_path, args.target)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            sys.exit(0 if result.get('status') == 'success' else 1)
 
     if args.query_facts:
         result = query_facts(args.root, filters=args.filter)

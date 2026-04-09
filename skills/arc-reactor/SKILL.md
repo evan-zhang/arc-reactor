@@ -59,4 +59,90 @@ EOF_ARC_DOC
 3. **附件必达 (File Delivery Verification)**: Orchestrator 在结束前，必须根据 JSON 回执的 `path`，用 `message` 工具把核心总结文件当做附件发给用户。这一步彻底防止幻觉！
 
 ---
+
+## 🖥️ Display Layer（展示层）
+
+用户看到的默认输出层。每次响应用户时，优先使用此层。
+
+### 规范
+- **长度**：≤200 字
+- **风格**：模拟人类对话，像在聊天
+- **结构**：结论先行，用「·」列出要点
+- **追问**：用户说"详细"、"展开" → 提供 Archive 层内容
+
+### 示例
+```
+这个项目讲的是xxx。
+核心结论：
+· xxx
+· xxx
+想了解更多可以追问。
+```
+
+---
+
+## 🔄 Obsidian 同步层（可选后处理）
+
+**触发时机**：Display Layer 输出完成后，异步执行  
+**前置条件**：`OBSIDIAN_VAULT_PATH` 已配置且 `AUTO_SYNC != false`
+
+### 配置变量
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `OBSIDIAN_VAULT_PATH` | `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/` | Obsidian 仓库根路径 |
+| `OBSIDIAN_TARGET_DIR` | `github分享/AI调研/{date}/` | 目标子目录，`{date}` 自动替换 |
+| `AUTO_SYNC` | `true` | 是否自动同步 |
+
+### 执行流程
+1. **校验配置**：`validate_obsidian_config()` 返回失败则跳过
+2. **复制报告**：将本次 source 文件复制到 `{vault}/{target_dir}/{topic}.md`
+3. **追加状态**：在源文件末尾追加 `同步状态: ✅ Obsidian (时间: ...)`
+4. **Display Layer**：Display Layer 永远先于同步完成，用户无感知等待
+
+### 铁律
+- 同步失败**不阻塞** Display Layer 输出
+- 同步失败**不重写** Display Layer 内容
+- `AUTO_SYNC=false` 时完全不执行任何 Obsidian 相关代码
+
+### 使用示例
+
+```bash
+# 手动触发同步
+python3 scripts/archive-manager.py \
+  --sync-obsidian \
+  --source "arc-reactor-doc/wiki/sources/2026-04-09/claude-code.md" \
+  --vault "$OBSIDIAN_VAULT_PATH" \
+  --target "github分享/AI调研/{date}/"
+
+# 异步模式（后台执行，立即返回）
+python3 scripts/archive-manager.py \
+  --sync-obsidian \
+  --source "arc-reactor-doc/wiki/sources/2026-04-09/claude-code.md" \
+  --vault "$OBSIDIAN_VAULT_PATH" \
+  --target "github分享/AI调研/{date}/" \
+  --async
+```
+
+---
+
+## 📱 Channel 自适应输出
+
+目标平台：Discord / Telegram（手机端）
+
+规范：
+- 不用 Markdown 表格
+- 不用超过3行的代码块
+- 分段要短，关键信息放前面
+- 列表用「·」或「1. 2. 3.」
+
+---
+
+## 💬 自然触发词
+
+现有 Ingest/Query/Lint 保留，但对用户透明。用户可以说：
+
+- "搜一下"、"帮我看"、"这个讲了什么" → 自动触发 Ingest + Display
+- "详细说说"、"展开" → 触发 Archive 层
+
+---
 *Powered by ARC Factory V4.0.5 | Karpathy Wiki Arch*
