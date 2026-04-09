@@ -8,6 +8,264 @@ from datetime import datetime
 import re
 
 
+FACT_INDEX_FILENAME = 'index-facts.json'
+FACT_SECTION_RE = re.compile(r'^###\s+(IN|OUT)-\d+:\s*(.+?)\s*$')
+FACT_FIELD_RE = re.compile(r'^-\s+\*\*(.+?)\*\*:\s*(.*)$')
+DATE_RE = re.compile(r'(\d{4}-\d{2}-\d{2})')
+AMOUNT_RE = re.compile(r'(\d+(?:\.\d+)?\s*(?:万|元))')
+PROJECT_RE = re.compile(r'([A-Za-z0-9\u4e00-\u9fff][A-Za-z0-9\u4e00-\u9fff\-_/（）()· ]{0,80}?(?:系统|项目|产品|平台|Framework|Skill))')
+
+
+def _fact_type_from_label(label, title='', summary=''):
+    """将 CWork 类型字段映射为标准 fact 类型。"""
+    normalized = (label or '').strip()
+    context = ' '.join([normalized, title or '', summary or ''])
+    lowered = context.lower()
+
+    if normalized == '合同管理(OPS)':
+        return 'contract'
+    if normalized == '会议室预约':
+        return 'meeting'
+    if normalized == '销售项目':
+        return 'project-progress'
+    if '日报' in context:
+        return 'daily-report'
+    if '测试' in context or 'test' in lowered:
+        return 'skill-test'
+    if normalized == '其他汇报':
+        return 'other'
+    return 'other'
+
+
+def _extract_fact_status(text):
+    """基于标题与摘要做轻量状态推断。"""
+    normalized = (text or '').strip()
+    if not normalized:
+        return 'unknown'
+
+    if re.search(r'全部通过|通过率\s*100%|已完成|全部修复|现已全部修复|成功跑通|完成', normalized):
+        return 'completed'
+    if re.search(r'申请|放行|审批', normalized):
+        return 'requested'
+    if re.search(r'进展|进行中|跟进|处理中|待办|追踪', normalized):
+        return 'in-progress'
+    if re.search(r'会议|沟通会|预约', normalized):
+        return 'scheduled'
+    return 'unknown'
+
+
+def _split_fact_sentences(text):
+    """将摘要切分为句子列表。"""
+    cleaned = re.sub(r'\s+', ' ', (text or '').strip())
+    if not cleaned:
+        return []
+
+    parts = re.split(r'(?<=[。！？!?；;])\s*', cleaned)
+    sentences = [part.strip() for part in parts if part.strip()]
+    if sentences:
+        return sentences
+    return [cleaned]
+
+
+def _extract_amount(text):
+    """提取首个金额信息。"""
+    match = AMOUNT_RE.search(text or '')
+    if not match:
+        return None
+    return match.group(1).replace(' ', '')
+
+
+def _extract_project(title, summary, entities):
+    """尽量提取项目名/系统名。"""
+    candidates = []
+    if title:
+        candidates.append(title)
+    if summary:
+        candidates.append(summary)
+    candidates.extend(entities or [])
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        direct = candidate.strip()
+        if re.search(r'(系统|项目|产品|平台|Framework|Skill)$', direct):
+            return direct
+        match = PROJECT_RE.search(direct)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def _normalize_fact_value(value):
+    """标准化过滤比较值。"""
+    if value is None:
+        return None
+    return str(value).strip().lower()
+
+
+def _load_fact_index(index_path):
+    """读取事实索引文件，异常时回退为空列表。"""
+    if not os.path.exists(index_path):
+        return []
+
+    try:
+        with open(index_path, 'r', encoding='utf-8') as file_obj:
+            data = json.load(file_obj)
+        if isinstance(data, list):
+            return data
+    except Exception:
+        return []
+    return []
+
+
+def _write_fact_index(index_path, entries):
+    """写回事实索引文件。"""
+    os.makedirs(os.path.dirname(index_path), exist_ok=True)
+    with open(index_path, 'w', encoding='utf-8') as file_obj:
+        json.dump(entries, file_obj, ensure_ascii=False, indent=2)
+
+
+def parse_fact_index_entries(markdown_text):
+    """解析 Markdown 快照中的事实条目。"""
+    sections = []
+    current = None
+
+    for raw_line in (markdown_text or '').splitlines():
+        line = raw_line.rstrip()
+        section_match = FACT_SECTION_RE.match(line)
+        if section_match:
+            if current is not None:
+                sections.append(current)
+            current = {
+                'section': section_match.group(1),
+                'title': section_match.group(2).strip(),
+                'lines': []
+            }
+            continue
+        if current is not None:
+            current['lines'].append(line)
+
+    if current is not None:
+        sections.append(current)
+
+    entries = []
+    for section in sections:
+        fields = {}
+        for line in section['lines']:
+            field_match = FACT_FIELD_RE.match(line.strip())
+            if not field_match:
+                continue
+            fields[field_match.group(1).strip()] = field_match.group(2).strip()
+
+        title = section['title']
+        author = fields.get('作者', '')
+        time_text = fields.get('时间', '')
+        type_label = fields.get('类型', '')
+        summary = fields.get('摘要', '')
+        entities_text = fields.get('关键实体', '')
+        date_match = DATE_RE.search(time_text)
+        date_value = date_match.group(1) if date_match else None
+        entities = [item.strip() for item in re.split(r'[，,、；;]', entities_text) if item.strip()]
+        context_text = '\n'.join([title, summary, type_label, entities_text])
+        stable_id_seed = f"{title}|{date_value or ''}|{author}"
+
+        entries.append({
+            'id': hashlib.sha256(stable_id_seed.encode('utf-8')).hexdigest()[:16],
+            'type': _fact_type_from_label(type_label, title=title, summary=summary),
+            'title': title,
+            'author': author,
+            'date': date_value,
+            'status': _extract_fact_status(context_text),
+            'entities': entities,
+            'key_facts': _split_fact_sentences(summary),
+            'amount': _extract_amount(' '.join([title, summary])),
+            'project': _extract_project(title, summary, entities),
+            'source_file': None,
+        })
+
+    return entries
+
+
+def ingest_fact_index(doc_root, markdown_text):
+    """将 Markdown 快照增量写入事实索引。"""
+    index_path = os.path.join(doc_root, 'wiki', FACT_INDEX_FILENAME)
+    existing_entries = _load_fact_index(index_path)
+    parsed_entries = parse_fact_index_entries(markdown_text)
+    existing_keys = {
+        (_normalize_fact_value(item.get('title')), _normalize_fact_value(item.get('date')))
+        for item in existing_entries if isinstance(item, dict)
+    }
+
+    added_entries = []
+    for entry in parsed_entries:
+        dedup_key = (_normalize_fact_value(entry.get('title')), _normalize_fact_value(entry.get('date')))
+        if dedup_key in existing_keys:
+            continue
+        existing_keys.add(dedup_key)
+        added_entries.append(entry)
+
+    final_entries = existing_entries + added_entries
+    _write_fact_index(index_path, final_entries)
+
+    return {
+        'status': 'success',
+        'action': 'fact_index',
+        'path': index_path,
+        'entries_parsed': len(parsed_entries),
+        'entries_added': len(added_entries),
+        'total_entries': len(final_entries),
+        'message': 'Fact index updated.'
+    }
+
+
+def query_facts(root_name, filters=None):
+    """按条件查询事实索引。"""
+    cwd = os.getcwd()
+    doc_root = find_doc_root(cwd, root_name)
+    index_path = os.path.join(doc_root, 'wiki', FACT_INDEX_FILENAME)
+    entries = [item for item in _load_fact_index(index_path) if isinstance(item, dict)]
+    parsed_filters = []
+
+    for raw_filter in filters or []:
+        if '=' not in raw_filter:
+            continue
+        field, value = raw_filter.split('=', 1)
+        field = field.strip()
+        value = value.strip()
+        if not field or value == '':
+            continue
+        parsed_filters.append((field, value))
+
+    def matches(entry):
+        for field, expected in parsed_filters:
+            expected_normalized = _normalize_fact_value(expected)
+
+            if field == 'text':
+                haystacks = [
+                    entry.get('title', ''),
+                    ' '.join(entry.get('key_facts', []) or []),
+                    ' '.join(entry.get('entities', []) or []),
+                ]
+                searchable = _normalize_fact_value(' '.join(haystacks)) or ''
+                if expected_normalized not in searchable:
+                    return False
+                continue
+
+            actual = entry.get(field)
+            if isinstance(actual, list):
+                normalized_list = [_normalize_fact_value(item) for item in actual]
+                if expected_normalized not in normalized_list:
+                    return False
+                continue
+
+            if _normalize_fact_value(actual) != expected_normalized:
+                return False
+
+        return True
+
+    return [entry for entry in entries if matches(entry)]
+
+
 def _split_inline_list(text):
     """拆分 YAML 内联列表，支持简单引号场景。"""
     items = []
@@ -251,6 +509,7 @@ def kb_init(root_name, name=None, description=None):
     files_to_create = [
         os.path.join(kb_root, 'wiki', 'index.md'),
         os.path.join(kb_root, 'wiki', 'log.md'),
+        os.path.join(kb_root, 'wiki', FACT_INDEX_FILENAME),
     ]
 
     created = []
@@ -262,7 +521,10 @@ def kb_init(root_name, name=None, description=None):
         for file_path in files_to_create:
             if not os.path.exists(file_path):
                 with open(file_path, 'w', encoding='utf-8') as file_obj:
-                    file_obj.write('')
+                    if file_path.endswith(FACT_INDEX_FILENAME):
+                        file_obj.write('[]')
+                    else:
+                        file_obj.write('')
                 created.append(file_path)
 
         new_entry = {
@@ -493,13 +755,15 @@ def main():
     parser.add_argument('--fix', action='store_true', help='Auto-fix issues found during lint')
     parser.add_argument('--kb-init', action='store_true', help='初始化新的知识库实例')
     parser.add_argument('--kb-list', action='store_true', help='列出所有已配置知识库')
+    parser.add_argument('--query-facts', action='store_true', help='查询事实索引')
     parser.add_argument('--type', choices=[
-        'raw', 'source', 'entity', 'concept', 'index', 'log', 'template'
+        'raw', 'source', 'entity', 'concept', 'index', 'log', 'template', 'fact-index'
     ], required=False, help='归档进入的 Wiki 圈层类型')
     
     parser.add_argument('--topic', required=False, default='knowledge-node', help='话题/实体名 (用于生成文件名)')
     parser.add_argument('--stdin', action='store_true', help='强制通过标准输入读取内容 (防止转义错误)')
     parser.add_argument('--root', default='arc-reactor-doc', help='文档根目录名称')
+    parser.add_argument('--filter', action='append', default=None, help='事实查询过滤条件，格式为 field=value，可重复传入')
     parser.add_argument('--name', required=False, default=None, help='KB 显示名称，仅用于 --kb-init')
     parser.add_argument('--description', required=False, default=None, help='KB 描述，仅用于 --kb-init')
     parser.add_argument('--date', required=False, default=None, help='指定的日期戳，缺省为今日')
@@ -507,6 +771,11 @@ def main():
                         help='去重策略: merge=增量合并, skip=跳过, overwrite=覆盖(默认)')
 
     args = parser.parse_args()
+
+    if args.query_facts:
+        result = query_facts(args.root, filters=args.filter)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
 
     if args.kb_init:
         result = kb_init(args.root, name=args.name, description=args.description)
@@ -549,6 +818,11 @@ def main():
     # 2. 确定物理路径
     cwd = os.getcwd()
     doc_root = find_doc_root(cwd, args.root)
+
+    if args.type == 'fact-index':
+        result = ingest_fact_index(doc_root, content_to_write)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
 
     target_dir = ""
     filename = ""
