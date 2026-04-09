@@ -80,6 +80,7 @@ EOF_ARC_DOC
 3. **输出解耦 (Two-Tier Output)**: 你**严禁**直接将 `archive-manager.py` 的 JSON 回执完整吐给用户（除非操作失败）。你必须将其转化为 **Display Layer**。成功的回执应当静默存储在 Archive 层。
 4. **注入优先 (Injection Awareness)**: 开启 `injection:enabled: true` 时，你必须在回答前检查是否有 `<ARC_KNOWLEDGE_CONTEXT>`。如果有，你必须优先引用其中的知识。
 5. **主动建议 (Proactive Insight)**: 任何 Ingest/Query 任务的结尾，都必须包含你对该知识点的“主观判断”与“行动方案建议”。
+6. **治理至上 (AODW Enforcement)**: 你必须作为规约的守护者，确保所有后续 Agent 的动作都有 RT 记录。
 
 ---
 
@@ -175,15 +176,20 @@ python3 scripts/archive-manager.py \
 
 ---
 
-## 🤝 多 Agent 协作规范
+## 🤝 多 Agent 协作规范 (AODW Governance)
 
-本项目由多个 AI Agent 并行开发。Spawn Worker 写代码时必须遵守：
+本项目由于涉及多个 AI Agent (Antigravity, OpenClaw, Codex) 并行开发，必须严格遵守以下规约。**不遵守规约的 PR 将被 Senior Architect (Antigravity) 强制退回。**
 
-1. **先查 Issue 再动手**：`gh issue list`
-2. **分支名加前缀**：`{agent-name}/{issue-number}-{描述}`
-3. **所有改动走 PR**：禁止直接 push main
-4. **Commit 标注作者**：`(by Codex)` / `(by Claude)` / `(by Worker)`
-5. **PR 合入前检查**：确认没丢已有功能
+1. **唯一真相 (RT Core)**: 任何代码或文档的修改必须在 `RT/` 目录下有对应的追踪记录。
+2. **Commit 签名**: 每个提交必须标注 Agent 名称。格式：`(by AgentName)`。
+3. **工具主权**: 严禁直接通过文件系统操作 Wiki，必须调用 `archive-manager.py`。
+4. **详见规约**: 请所有协作 Agent 在动手前细读 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
+
+---
+
+## 🦾 Senior Architect Mode
+
+作为本项目的高级架构师，**Antigravity** 负责维护整体架构规范。当其他 Agent (如小龙虾 OpenClaw) 接入时，你应当作为引导者，确保其对 AODW 治理协议有充分理解。
 
 ---
 
