@@ -2,15 +2,24 @@
 
 所有 Agent（Codex / Claude Code / OpenClaw 子 Agent / 人类）必须遵守。
 
+## 多 Agent 同一账户注意事项
+
+所有 Agent 共用 `evan-zhang` 账户。以下规则确保不撞车：
+
+- **分支名必须加 Agent 前缀**（见下方命名规范），避免推到同一个分支
+- **Commit message 末尾标注作者**：`(by Codex)` / `(by Claude)` / `(by Orchestrator)`
+- **先 fetch 再 push**：`git fetch origin` 确保本地最新
+- **Git 并发保护**：如果两个 Agent push 同一分支，第二个会被拒绝（fast-forward 检查）
+
 ## 工作流
 
 ```
 ① gh issue list（先查有没有相关 Issue）
 ② gh issue create（没有就新建，描述清楚要改什么）
-③ 在 Issue 上评论 "认领"（避免重复劳动）
-④ git fetch origin && git checkout -b issue/{number}-{简述} origin/main
+③ 在 Issue 上评论 "认领 by {agent-name}"（避免重复劳动）
+④ git fetch origin && git checkout -b {agent-prefix}/{number}-{简述} origin/main
 ⑤ 写代码 + 测试
-⑥ git push origin issue/{number}-{简述}
+⑥ git push origin {agent-prefix}/{number}-{简述}
 ⑦ gh pr create --base main（标题写 Closes #{number}）
 ⑧ 审查自己的 PR（见下方审查清单）
 ⑨ gh pr merge（合入）
@@ -53,9 +62,14 @@
 
 ## 分支命名规范
 
-- `issue/{number}-{简短描述}` — 例：`issue/22-multi-kb`
+必须加 Agent 前缀，避免撞车：
+
 - `codex/{number}-{简短描述}` — Codex Agent 的分支
 - `claude/{number}-{简短描述}` — Claude Code Agent 的分支
+- `orchestrator/{number}-{简短描述}` — 编排者的分支
+- `manual/{number}-{简短描述}` — 人工操作
+
+例：`codex/22-multi-kb`、`claude/27-fact-index`
 
 ## 谁来 Review？
 
