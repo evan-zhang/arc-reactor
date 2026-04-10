@@ -186,3 +186,15 @@ items:
     owner: evan
     created_at: 2026-04-09T21:18:00Z
     closed_at: 2026-04-09T21:23:00Z
+
+  - id: RT-016
+    title: media-extractor-module
+    type: Feature
+    profile: Spec-Lite
+    status: done
+    modules:
+      - arc-reactor-core
+    tool: ClaudeCode
+    owner: evan
+    created_at: 2026-04-10T12:00:00Z
+    closed_at: 2026-04-10T12:15:00Z
