@@ -1,3 +1,8 @@
+---
+name: arc-reactor
+description: "LLM Wiki 知识编译引擎。将 URL、文章、视频等素材编译为结构化知识库。触发词：搜一下、帮我看、这个讲了什么、读一下、看看这个、调研、Ingest、知识编译。支持视频转写（阿里云NLS/本地Whisper）、网页智能抓取、Wiki 4连击 Ingest（source/entity/index/log）、知识检索、健康检查、周报。"
+metadata: {"openclaw": {"requires": {"bins": ["python3", "yt-dlp"]}, "install": [{"id": "pip", "kind": "pip", "label": "Install Python dependencies"}]}}
+---
 # ARC Reactor V4 — Compilation over Retrieval
 # Version: 4.2.0 (Weekly Executive Brief Edition)
 
