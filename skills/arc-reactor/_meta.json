@@ -1,6 +1,6 @@
 {
   "name": "arc-reactor",
-  "version": "4.2.0",
+  "version": "4.3.0",
   "description": "ARC (Acquire/Research/Catalogue) - 个人知识建设智能调研引擎",
   "author": "evan",
   "tags": ["research", "knowledge-management", "automation"],
