@@ -1,0 +1,17 @@
+请修复 skills/arc-reactor/scripts/compile-report.py 的以下问题：
+
+**M1（高优先级）：compile_report 重试逻辑问题**
+- 当前：`call_llm` 抛异常时统一重试，没有区分"可重试"（网络超时、限流）和"不可重试"（SDK 未安装、参数错误）
+- 修复：区分异常类型，只对可重试的异常重试；SDK 未安装等永久性错误直接 fallback 或退出
+
+**M2（高优先级）：空内容校验位置问题**
+- 当前：`load_raw_content()` 末尾才检查空内容
+- 修复：对文件输入，先用 `path.stat().st_size == 0` 提前检查
+
+**M3（中优先级）：API 限流/配额错误处理**
+- 当前：没有区分限流错误
+- 修复：在各 provider 分支中，捕获限流错误（429）并特殊处理
+
+请直接修改文件。修改后说明每个改动的具体内容。
+
+当完成时，运行：openclaw system event --text "Codex 第一轮修复完成" --mode now
