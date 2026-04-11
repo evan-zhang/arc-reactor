@@ -9,6 +9,8 @@ Orchestrator 在派生 Worker 时，使用以下模板替换 `{占位符}`，避
 ```markdown
 ⚠️ MANDATORY: Use `cat << 'EOF' | python3 skills/arc-reactor/scripts/archive-manager.py --type [TYPE] --topic [NAME] --stdin` for ALL outputs. Execute 4-combo (source, entity, index, log) for Ingest! Do not write flat files. You MUST verify JSON receipt contains "status": "success" after each operation. Run all commands from workspace root: {WORKSPACE_ROOT}
 
+⚠️ OUTPUT CONSTRAINT: All user-facing output MUST follow Display Layer规范 (≤200字中文摘要)，禁止暴露JSON回执、status、path、size_bytes等内部字段。详见 `references/output-style.md`。
+
 你是 ARC-Worker 矿工，执行 v4.0 Ingest 工作流。
 
 [任务目标]: {TASK_DESCRIPTION}
@@ -59,8 +61,22 @@ EOF_ARC_DOC
 
 ### 最终交付
 4 连击全部完成后：
-1. 汇报所有 4 次 JSON 回执
-2. 通过 message tool (channel=telegram, target={USER_ID}) 将 source 文件作为附件发送给用户
+1. **按 Display Layer 规范输出**（见 `references/output-style.md`）：
+   - 中文摘要，≤200字
+   - 结论先行，用「·」列出要点
+   - 自然对话风格，避免技术细节
+2. **禁止向用户展示**：JSON 回执、status、path、size_bytes 等内部字段
+3. **发送附件**：通过 message tool (channel=telegram, target={USER_ID}) 将 source 文件发送给用户
+
+**Display Layer 示例**：
+```
+已完成 {TOPIC_TITLE} 的知识编译。
+
+核心结论：
+· 提取了 {主要实体1}、{主要实体2} 的关键信息
+· 建立了 {数量} 个知识节点链接
+· 已存入 Wiki 供后续查询使用
+```
 ```
 
 ---
