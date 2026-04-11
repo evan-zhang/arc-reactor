@@ -50,12 +50,12 @@ git push origin master --force
 
 ## 4. 验收标准
 
-- [ ] 确认 `main` 分支包含所有最新的功能和修复
-- [ ] 远程 `master` 分支已删除
-- [ ] 本地 `master` 分支引用已清理
-- [ ] README 中不再提及 `master` 分支
-- [ ] 验证用户 `git clone` 默认获取 `main` 分支
-- [ ] 运行 `bash verify-v42.sh` 验证功能完整
+- [x] 确认 `main` 分支包含所有最新的功能和修复
+- [x] 远程 `master` 分支已删除
+- [x] 本地 `master` 分支引用已清理
+- [x] README 中不再提及 `master` 分支
+- [x] 验证用户 `git clone` 默认获取 `main` 分支
+- [x] 运行 `bash verify-v42.sh` 验证功能完整
 
 ## 5. 风险评估
 

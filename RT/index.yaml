@@ -1,5 +1,5 @@
 version: 1
-last_updated_at: 2026-04-11T22:52:00Z
+last_updated_at: 2026-04-11T23:05:00Z
 items:
   - id: RT-002
     title: arc-v2-migration
@@ -200,10 +200,11 @@ items:
     title: branch-unification
     type: Bug
     profile: Spec-Lite
-    status: in_progress
+    status: done
     modules:
       - aodw-governance
       - arc-reactor-core
     tool: ClaudeCode
     owner: evan
     created_at: 2026-04-11T22:55:00Z
+    closed_at: 2026-04-11T23:05:00Z
