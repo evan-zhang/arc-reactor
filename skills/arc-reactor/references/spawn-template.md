@@ -18,6 +18,73 @@ Orchestrator 在派生 Worker 时，使用以下模板替换 `{占位符}`，避
 2. 用 web_search 搜索 "{SEARCH_QUERY_2}" 获取英文技术细节
 3. 尝试 web_fetch 获取原始素材页面
 
+[Step 1: 原始素材聚合]
+将所有获取到的原始内容（搜索结果 + 抓取内容）合并为一个原始素材文件：
+```bash
+cat > /tmp/raw-content-{TOPIC_SLUG}.txt << 'EOF_RAW'
+（这里放入所有原始内容：搜索结果 + 抓取内容）
+EOF_RAW
+```
+
+[Step 2: 强制结构化分析（新增，必须执行）]
+使用 compile-report.py 对原始素材进行强制多维分析：
+```bash
+python3 skills/arc-reactor/scripts/compile-report.py \
+  --topic "{TOPIC_TITLE}" \
+  --raw /tmp/raw-content-{TOPIC_SLUG}.txt \
+  --output /tmp/compiled-report-{TOPIC_SLUG}.json
+```
+
+compile-report.py 会：
+- 强制执行多维分析（背景/原理/实现/评价/竞品/可信度）
+- 输出符合 JSON Schema 的结构化报告
+- 验证所有 required fields 存在，不合格自动重试（最多3次）
+
+读取分析结果：
+```bash
+# 将 JSON 报告转换为 Markdown 格式的 Source 内容
+REPORT_CONTENT=$(cat /tmp/compiled-report-{TOPIC_SLUG}.json | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+report = data['report']
+print(f'# {report[\"topic\"]}')
+print()
+print(f'## 一句话总结')
+print(f'> {report[\"summary\"]}')
+print()
+print(f'## 关键发现')
+for i, finding in enumerate(report[\"key_findings\"], 1):
+    print(f'{i}. {finding}')
+print()
+print(f'## 背景')
+print(report[\"structure\"][\"background\"])
+print()
+print(f'## 原理/机制')
+print(report[\"structure\"][\"principle\"])
+print()
+print(f'## 实现方式')
+print(report[\"structure\"][\"implementation\"])
+print()
+print(f'## 评价')
+print(report[\"structure\"][\"evaluation\"])
+print()
+print(f'## 替代方案')
+for alt in report[\"alternatives\"]:
+    print(f'- {alt}')
+print()
+print(f'## 可信度评级：{report[\"credibility\"][\"rating\"]}')
+if report[\"credibility\"][\"verified\"]:
+    print(f'✅ 已核实：{\", \".join(report[\"credibility\"][\"verified\"])}')
+if report[\"credibility\"][\"disputed\"]:
+    print(f'❌ 存疑：{\", \".join(report[\"credibility\"][\"disputed\"])}')
+if report[\"credibility\"][\"unverified\"]:
+    print(f'⚠️ 未核实：{\", \".join(report[\"credibility\"][\"unverified\"])}')
+print()
+print(f'## 行动建议')
+print(report[\"actionable\"])
+")
+```
+
 [执行协议 - 4 连击 Ingest]:
 
 ### Hit 1: Source 页
@@ -29,14 +96,23 @@ title: "{TOPIC_TITLE}"
 sources: [{SOURCE_URLS}]
 tags: [{TAGS}]
 ---
-（你的完整 Source 内容）
+$REPORT_CONTENT
 EOF_ARC_DOC
 ```
 
 ### Hit 2: Entity 页
 ```bash
 cat << 'EOF_ARC_DOC' | python3 skills/arc-reactor/scripts/archive-manager.py --type entity --topic "{ENTITY_SLUG}" --stdin
-（实体词条，使用 [[Wiki-Link]] 引用相关实体）
+# {TOPIC_TITLE}
+
+## 一句话
+$(cat /tmp/compiled-report-{TOPIC_SLUG}.json | python3 -c "import json,sys; print(json.load(sys.stdin)[\"report\"][\"summary\"])")
+
+## 关键发现
+$(cat /tmp/compiled-report-{TOPIC_SLUG}.json | python3 -c "import json,sys; print('\\n'.join([f'- {f}' for f in json.load(sys.stdin)[\"report\"][\"key_findings\"]]))" 2>/dev/null || echo "See source for details")
+
+## 可信度
+评级：$(cat /tmp/compiled-report-{TOPIC_SLUG}.json | python3 -c "import json,sys; print(json.load(sys.stdin)[\"report\"][\"credibility\"][\"rating\"])")
 EOF_ARC_DOC
 ```
 

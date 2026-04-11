@@ -198,3 +198,15 @@ items:
     owner: evan
     created_at: 2026-04-10T12:00:00Z
     closed_at: 2026-04-10T12:15:00Z
+
+  - id: RT-028
+    title: compile-report-structured-analysis-engine
+    type: Feature
+    profile: Spec-Full
+    status: done
+    modules:
+      - arc-reactor-core
+    tool: OpenClaw
+    owner: evan
+    created_at: 2026-04-11T04:44:00Z
+    closed_at: 2026-04-11T04:50:00Z
