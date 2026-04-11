@@ -962,6 +962,98 @@ def lint_wiki(doc_root, fix=False):
     }
 
 
+def validate_files(doc_root, paths=None):
+    """验证文件是否存在且有效。
+
+    Args:
+        doc_root: 文档根目录路径
+        paths: 要验证的文件路径列表（相对于 doc_root），如果为 None 则验证整个 Wiki
+
+    Returns:
+        包含验证结果的 JSON 可序列化字典
+    """
+    if not paths:
+        # 验证整个 Wiki 结构
+        wiki_dir = os.path.join(doc_root, 'wiki')
+        if not os.path.exists(wiki_dir):
+            return {"status": "error", "message": f"Wiki directory not found: {wiki_dir}"}
+
+        files_valid = 0
+        files_invalid = []
+        files_empty = []
+
+        # 遍历所有 Markdown 文件
+        for root, dirs, files in os.walk(wiki_dir):
+            for f in files:
+                if f.endswith('.md'):
+                    fpath = os.path.join(root, f)
+                    try:
+                        # 验证文件可读且非空
+                        with open(fpath, 'r', encoding='utf-8') as file_obj:
+                            content = file_obj.read()
+                        if not content.strip():
+                            files_empty.append(fpath)
+                            files_invalid.append(fpath)
+                        else:
+                            files_valid += 1
+                    except Exception as e:
+                        files_invalid.append(fpath)
+
+        return {
+            "status": "ok" if not files_invalid else "partial",
+            "action": "validate_wiki",
+            "files_valid": files_valid,
+            "files_invalid": len(files_invalid),
+            "files_empty": len(files_empty),
+            "invalid_files": files_invalid,
+            "message": f"Validation complete: {files_valid} valid, {len(files_invalid)} invalid ({len(files_empty)} empty)"
+        }
+    else:
+        # 验证特定文件
+        results = []
+        all_valid = True
+
+        for path in paths:
+            full_path = os.path.join(doc_root, path)
+            if os.path.exists(full_path):
+                try:
+                    with open(full_path, 'r', encoding='utf-8') as file_obj:
+                        content = file_obj.read()
+                    if content.strip():
+                        results.append({
+                            "path": path,
+                            "status": "valid",
+                            "size": len(content)
+                        })
+                    else:
+                        results.append({
+                            "path": path,
+                            "status": "empty",
+                            "size": 0
+                        })
+                        all_valid = False
+                except Exception as e:
+                    results.append({
+                        "path": path,
+                        "status": "error",
+                        "error": str(e)
+                    })
+                    all_valid = False
+            else:
+                results.append({
+                    "path": path,
+                    "status": "not_found"
+                })
+                all_valid = False
+
+        return {
+            "status": "ok" if all_valid else "partial",
+            "action": "validate_files",
+            "results": results,
+            "message": f"Validated {len(results)} files: {sum(1 for r in results if r['status'] == 'valid')} valid"
+        }
+
+
 def validate_obsidian_config(vault_path):
     """Validate Obsidian vault configuration."""
     vault = os.path.expanduser(vault_path)
@@ -1016,6 +1108,7 @@ def main():
     parser = argparse.ArgumentParser(description='ARC Reactor V4 Archive Manager (Karpathy Wiki Edition)')
     parser.add_argument('--lint', action='store_true', help='Run Wiki health check')
     parser.add_argument('--fix', action='store_true', help='Auto-fix issues found during lint')
+    parser.add_argument('--validate', action='store_true', help='Validate file integrity and existence')
     parser.add_argument('--kb-init', action='store_true', help='初始化新的知识库实例')
     parser.add_argument('--kb-list', action='store_true', help='列出所有已配置知识库')
     parser.add_argument('--query-facts', action='store_true', help='查询事实索引')
@@ -1094,6 +1187,14 @@ def main():
         cwd = os.getcwd()
         doc_root = find_doc_root(cwd, args.root)
         result = lint_wiki(doc_root, fix=args.fix)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
+
+    # Validate mode — verify file integrity
+    if args.validate:
+        cwd = os.getcwd()
+        doc_root = find_doc_root(cwd, args.root)
+        result = validate_files(doc_root)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0)
 

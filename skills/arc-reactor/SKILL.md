@@ -72,6 +72,43 @@ metadata: {"openclaw": {"requires": {"bins": ["python3", "yt-dlp"]}, "install": 
 
 ---
 
+## 🛡️ 事后验证（Post-Worker Validation）
+
+**强制性要求**：Worker 完成任务后，Orchestrator 必须验证执行结果，防止 Worker 幻觉或伪造执行。
+
+### 验证流程
+
+1. **检查 JSON 回执**：Worker 应输出包含 `"status": "success"` 的 JSON
+2. **验证文件存在**：运行 `python3 skills/arc-reactor/scripts/archive-manager.py --validate`
+3. **如果验证失败**：Orchestrator 必须手动重新归档文件
+
+### 示例验证流程
+
+```bash
+# Worker 完成后，Orchestrator 运行验证
+python3 skills/arc-reactor/scripts/archive-manager.py --validate
+
+# 预期输出（成功）：
+# {"status": "ok", "action": "validate_wiki", "files_valid": 15, "files_invalid": 0, "files_empty": 0, "invalid_files": [], "message": "Validation complete: 15 valid, 0 invalid (0 empty)"}
+
+# 预期输出（失败）：
+# {"status": "partial", "action": "validate_wiki", "files_valid": 14, "files_invalid": 1, "files_empty": 1, "invalid_files": [...], "message": "Validation complete: 14 valid, 1 invalid (1 empty)"}
+```
+
+### 验证失败处理
+
+- 如果 `files_invalid > 0` 或 `files_empty > 0`，说明 Worker 撒谎或执行失败
+- Orchestrator 必须重新执行失败的归档操作
+- 记录验证失败情况到 RT 或 issue 跟踪
+
+### 双向验证机制
+
+这形成了"Worker 执行 → Orchestrator 验证"的双向验证闭环：
+- **Worker**：负责执行归档操作，输出 JSON 回执
+- **Orchestrator**：负责验证执行结果，确保数据一致性
+
+---
+
 ## 🖥️ Display Layer（展示层）
 
 每次响应用户时必须遵守此层规范。详见 `references/output-style.md`。
