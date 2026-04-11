@@ -1,17 +1,6 @@
 version: 1
-last_updated_at: 2026-04-09T20:27:00Z
+last_updated_at: 2026-04-11T22:52:00Z
 items:
-  - id: RT-001
-    title: tpr-framework-maintenance
-    type: Enhancement
-    profile: Spec-Lite
-    status: done
-    modules: 
-      - tpr-framework
-    tool: Antigravity
-    owner: evan
-    created_at: 2026-04-08T00:40:31
-    closed_at: 2026-04-08T00:52:27Z
   - id: RT-002
     title: arc-v2-migration
     type: Enhancement
@@ -35,6 +24,7 @@ items:
     owner: evan
     created_at: 2026-04-08T10:00:00Z
     closed_at: 2026-04-08T20:00:00Z
+
   - id: RT-004
     title: archive-manager-implementation
     type: Feature
@@ -46,6 +36,7 @@ items:
     owner: evan
     created_at: 2026-04-08T10:54:00Z
     closed_at: 2026-04-08T11:55:00Z
+
   - id: RT-005
     title: codifying-skill-dev-standards
     type: Documentation
@@ -57,6 +48,7 @@ items:
     owner: evan
     created_at: 2026-04-08T11:20:00Z
     closed_at: 2026-04-08T11:55:00Z
+
   - id: RT-006
     title: karpathy-llm-wiki-architecture
     type: Feature
@@ -68,6 +60,7 @@ items:
     owner: evan
     created_at: 2026-04-08T12:08:00Z
     closed_at: 2026-04-08T14:12:00Z
+
   - id: RT-007
     title: dynamic-context-injector
     type: Feature
@@ -80,6 +73,7 @@ items:
     owner: evan
     created_at: 2026-04-08T14:12:00Z
     closed_at: 2026-04-09T07:44:00Z
+
   - id: RT-008
     title: weekly-report-generator
     type: Feature
@@ -91,6 +85,7 @@ items:
     owner: evan
     created_at: 2026-04-09T07:44:00Z
     closed_at: 2026-04-09T07:48:00Z
+
   - id: RT-009
     title: conflict-collider-mitigation
     type: Bug
@@ -115,6 +110,7 @@ items:
     owner: evan
     created_at: 2026-04-09T19:54:00Z
     closed_at: 2026-04-09T20:17:00Z
+
   - id: RT-011
     title: entity-export-feature
     type: Feature
@@ -126,6 +122,7 @@ items:
     owner: evan
     created_at: 2026-04-09T20:07:00Z
     closed_at: 2026-04-09T20:17:00Z
+
   - id: RT-012
     title: auto-date-injection-fix
     type: Bug
@@ -162,18 +159,6 @@ items:
     created_at: 2026-04-09T20:40:00Z
     closed_at: 2026-04-09T20:41:00Z
 
-  - id: RT-027
-    title: fact-index-verification
-    type: Documentation
-    profile: Spec-Lite
-    status: done
-    modules:
-      - arc-reactor-core
-    tool: Antigravity
-    owner: evan
-    created_at: 2026-04-09T20:40:00Z
-    closed_at: 2026-04-09T20:41:00Z
-
   - id: RT-015
     title: stability-and-consistency-package
     type: Bug
@@ -198,3 +183,15 @@ items:
     owner: evan
     created_at: 2026-04-10T12:00:00Z
     closed_at: 2026-04-10T12:15:00Z
+
+  - id: RT-017
+    title: fact-index-verification
+    type: Documentation
+    profile: Spec-Lite
+    status: done
+    modules:
+      - arc-reactor-core
+    tool: Antigravity
+    owner: evan
+    created_at: 2026-04-09T20:40:00Z
+    closed_at: 2026-04-09T20:41:00Z

@@ -1,4 +1,4 @@
-# RT-027: Fact Index Verification (Issue #27)
+# RT-017: Fact Index Verification (Issue #27)
 
 ## 1. 简介 (Introduction)
 本项目实现了“三层知识架构”中的第二层：Fact Index（事实索引）。本规约旨在验证其核心逻辑：结构化解析 CWork 报告中的事实，并支持去重与精准查询。
