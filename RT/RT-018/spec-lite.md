@@ -57,6 +57,19 @@ git push origin master --force
 - [x] 验证用户 `git clone` 默认获取 `main` 分支
 - [x] 运行 `bash verify-v42.sh` 验证功能完整
 
+## 5. 验证结果（2026-04-12）
+
+**验证环境**：全新的 Agent tt，全新克隆的仓库
+
+**验证步骤**：
+1. ✅ 当前分支为 `main`
+2. ✅ 执行 `git remote prune origin` 清理陈旧的 `origin/master` 引用
+3. ✅ 确认 `origin/master` 已被删除
+4. ✅ 确认能看到 RT-018 相关提交：`b0bda1f fix: complete RT-018 branch unification`
+5. ✅ 远程只剩下 `origin/main` 作为唯一主分支
+
+**结论**：分支统一功能完全正常，新用户不会再被 master 分支混淆。
+
 ## 5. 风险评估
 
 - **低风险**：master 分支已落后且非默认分支

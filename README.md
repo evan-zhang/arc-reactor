@@ -42,8 +42,8 @@ git clone https://github.com/evan-zhang/arc-reactor.git
 
 ### 3. 验证安装
 ```bash
-cd arc-reactor/skills/arc-reactor
-python3 scripts/archive-manager.py --help
+cd arc-reactor
+python3 skills/arc-reactor/scripts/archive-manager.py --help
 ```
 
 ---

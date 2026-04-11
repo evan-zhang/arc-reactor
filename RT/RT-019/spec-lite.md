@@ -97,7 +97,19 @@ find skills/arc-reactor -name "test-path-fix.md" -o -name "test-from-skill-dir.m
 
 这完全避免了"split-brain"知识库的问题，确保所有知识文件都统一存储在 workspace root。
 
-## 7. 后续建议
+## 7. 验证结果（2026-04-12）
+
+**验证环境**：全新的 Agent tt，真实环境测试
+
+**验证步骤**：
+1. ✅ **从根目录调用**：文件正确写入 `arc-reactor-doc/wiki/sources/2026-04-12/test-root-dir.md`
+2. ✅ **从 skill 目录调用**：文件同样正确写入 `arc-reactor-doc/wiki/sources/2026-04-12/test-skill-dir.md`
+3. ✅ **确认 skill 目录干净**：`find skills/arc-reactor -name "test-*.md"` 无结果
+4. ✅ **路径自动检测功能正常**：`find_doc_root()` 函数正确识别 workspace root
+
+**结论**：路径自动检测功能完全正常，无论从哪个目录调用脚本都能写入正确位置，有效避免了"split-brain"知识库问题。
+
+## 8. 后续建议
 
 虽然问题已修复，但建议在 `SKILL.md` 中明确说明：
 - Worker 不需要 `cd` 到 skill 目录
