@@ -1,5 +1,5 @@
 version: 1
-last_updated_at: 2026-04-12T12:45:00Z
+last_updated_at: 2026-04-12T13:15:00Z
 items:
   - id: RT-002
     title: arc-v2-migration
@@ -245,3 +245,15 @@ items:
     owner: evan
     created_at: 2026-04-12T12:30:00Z
     closed_at: 2026-04-12T12:45:00Z
+
+  - id: RT-022
+    title: ingest-delivery-checklist
+    type: Bug
+    profile: Spec-Lite
+    status: done
+    modules:
+      - arc-reactor-core
+    tool: ClaudeCode
+    owner: evan
+    created_at: 2026-04-12T13:00:00Z
+    closed_at: 2026-04-12T13:15:00Z
